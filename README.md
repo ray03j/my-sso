@@ -18,6 +18,7 @@ OIDC / OAuth2 ベースのシングルサインオン（SSO）システムのモ
 - Docker
 - Docker Compose
 - (オプション) lefthook
+  - lefthook を使用する場合、開発中は常に `docker compose up -d` でコンテナを起動しておく必要があります
 
 ## 環境構築
 
@@ -74,6 +75,8 @@ docker compose exec demo-rp pnpm install
 ### 6. (オプション) lefthook のセットアップ
 
 Git フックでコード品質チェックを実行する場合は、ホスト側に lefthook をインストールして有効化してください。
+
+> **注意:** lefthook のフックはコンテナ内でコマンドを実行するため、開発中は常に `docker compose up -d` でコンテナを起動しておく必要があります。
 
 #### lefthook のインストール
 
