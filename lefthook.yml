@@ -6,11 +6,11 @@ pre-commit:
     eslint-frontend:
       root: frontend/
       glob: "*.{ts,vue}"
-      run: npx eslint --fix {staged_files}
+      run: pnpm eslint --fix {staged_files}
     eslint-demo-rp:
       root: demo-rp/
       glob: "*.{ts,vue}"
-      run: npx eslint --fix {staged_files}
+      run: pnpm eslint --fix {staged_files}
 
 pre-push:
   commands:
