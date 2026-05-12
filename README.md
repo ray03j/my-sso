@@ -17,6 +17,7 @@ OIDC / OAuth2 ベースのシングルサインオン（SSO）システムのモ
 
 - Docker
 - Docker Compose
+- pnpm 9.x（frontend / demo-rp の依存関係インストールに必要）
 - (オプション) lefthook
   - lefthook を使用する場合、開発中は常に `docker compose up -d` でコンテナを起動しておく必要があります
 
@@ -62,14 +63,13 @@ docker compose exec idp-client bundle exec rails db:migrate
 
 ### 5. フロントエンド依存関係のインストール
 
-初回起動時にコンテナ内で依存関係がインストールされますが、手動で実行する場合は以下の通りです。
+`compose.yml` でホストディレクトリがコンテナにマウントされるため、
+コンテナビルド時にインストールされた `node_modules` は無効になります。
+必ずホスト側で依存関係をインストールしてください。
 
 ```bash
-# frontend
-docker compose exec frontend pnpm install
-
-# demo-rp
-docker compose exec demo-rp pnpm install
+cd frontend && pnpm install
+cd ../demo-rp && pnpm install
 ```
 
 ### 6. (オプション) lefthook のセットアップ
