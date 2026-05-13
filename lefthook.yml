@@ -1,0 +1,22 @@
+pre-commit:
+  commands:
+    rubocop:
+      glob: "*.{rb,gemfile}"
+      run: docker compose exec -T idp-auth bundle exec rubocop --force-exclusion {staged_files}
+    eslint-frontend:
+      root: frontend/
+      glob: "*.{ts,vue}"
+      run: docker compose exec -T frontend pnpm eslint --fix {staged_files}
+    eslint-demo-rp:
+      root: demo-rp/
+      glob: "*.{ts,vue}"
+      run: docker compose exec -T demo-rp pnpm eslint --fix {staged_files}
+
+pre-push:
+  commands:
+    rspec-auth:
+      run: docker compose exec -T idp-auth bundle exec rspec
+    rspec-user:
+      run: docker compose exec -T idp-user bundle exec rspec
+    rspec-client:
+      run: docker compose exec -T idp-client bundle exec rspec
