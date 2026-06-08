@@ -2,8 +2,8 @@ class CreateAuthorizationCodes < ActiveRecord::Migration[7.1]
   def change
     create_table :authorization_codes do |t|
       t.string :code, null: false
-      t.string :user_id, null: false
-      t.string :client_id, null: false
+      t.uuid :user_id, null: false
+      t.uuid :client_id, null: false
       t.string :redirect_uri
       t.string :scope
       t.datetime :expires_at, null: false

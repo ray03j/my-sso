@@ -12,10 +12,11 @@
 
 ActiveRecord::Schema[7.1].define(version: 1) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "pgcrypto"
   enable_extension "plpgsql"
 
-  create_table "clients", force: :cascade do |t|
-    t.string "client_id", null: false
+  create_table "clients", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "client_id", null: false
     t.string "client_secret_hash", null: false
     t.string "name", null: false
     t.text "redirect_uris", null: false
