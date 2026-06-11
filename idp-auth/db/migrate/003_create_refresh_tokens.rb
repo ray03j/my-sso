@@ -10,6 +10,6 @@ class CreateRefreshTokens < ActiveRecord::Migration[7.1]
     end
 
     add_index :refresh_tokens, :token, unique: true
-    add_index :refresh_tokens, [:user_id, :client_id]
+    add_index :refresh_tokens, %i[user_id client_id]
   end
 end

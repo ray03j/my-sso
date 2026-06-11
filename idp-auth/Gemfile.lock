@@ -295,7 +295,7 @@ DEPENDENCIES
   strong_migrations
 
 RUBY VERSION
-   ruby 3.3.0p0
+   ruby 3.4.9p82
 
 BUNDLED WITH
    2.5.23

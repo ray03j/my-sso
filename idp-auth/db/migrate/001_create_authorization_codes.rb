@@ -12,6 +12,6 @@ class CreateAuthorizationCodes < ActiveRecord::Migration[7.1]
     end
 
     add_index :authorization_codes, :code, unique: true
-    add_index :authorization_codes, [:client_id, :used]
+    add_index :authorization_codes, %i[client_id used]
   end
 end

@@ -7,6 +7,6 @@ class CreateConsents < ActiveRecord::Migration[7.1]
       t.timestamps
     end
 
-    add_index :consents, [:user_id, :client_id], unique: true
+    add_index :consents, %i[user_id client_id], unique: true
   end
 end

@@ -10,6 +10,6 @@ class CreateAccessTokens < ActiveRecord::Migration[7.1]
     end
 
     add_index :access_tokens, :token, unique: true
-    add_index :access_tokens, [:user_id, :client_id]
+    add_index :access_tokens, %i[user_id client_id]
   end
 end
