@@ -1,8 +1,17 @@
 pre-commit:
   commands:
-    rubocop:
+    rubocop-auth:
+      root: idp-auth/
       glob: "*.{rb,gemfile}"
-      run: docker compose exec -T idp-auth bundle exec rubocop --force-exclusion {staged_files}
+      run: bundle exec rubocop --force-exclusion {staged_files}
+    rubocop-user:
+      root: idp-user/
+      glob: "*.{rb,gemfile}"
+      run: bundle exec rubocop --force-exclusion {staged_files}
+    rubocop-client:
+      root: idp-client/
+      glob: "*.{rb,gemfile}"
+      run: bundle exec rubocop --force-exclusion {staged_files}
     eslint-frontend:
       root: frontend/
       glob: "*.{ts,vue}"
