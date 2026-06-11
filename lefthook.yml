@@ -24,8 +24,11 @@ pre-commit:
 pre-push:
   commands:
     rspec-auth:
-      run: docker compose exec -T idp-auth bundle exec rspec
+      root: idp-auth/
+      run: bundle exec rspec
     rspec-user:
-      run: docker compose exec -T idp-user bundle exec rspec
+      root: idp-user/
+      run: bundle exec rspec
     rspec-client:
-      run: docker compose exec -T idp-client bundle exec rspec
+      root: idp-client/
+      run: bundle exec rspec
