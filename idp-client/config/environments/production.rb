@@ -1,12 +1,12 @@
-require "active_support/core_ext/integer/time"
+require 'active_support/core_ext/integer/time'
 
 Rails.application.configure do
   config.enable_reloading = false
   config.eager_load = true
   config.consider_all_requests_local = false
   config.server_timing = false
-  config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
-  config.public_file_server.headers = { "Cache-Control" => "public, max-age=#{1.year.to_i}" }
+  config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present?
+  config.public_file_server.headers = { 'Cache-Control' => "public, max-age=#{1.year.to_i}" }
 
   config.cache_store = :memory_store
 
