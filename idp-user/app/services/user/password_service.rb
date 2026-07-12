@@ -3,7 +3,7 @@ require 'bcrypt'
 class User
   class PasswordService
     def self.hash(password)
-      BCrypt::Password.create(password)
+      BCrypt::Password.create(password).to_s
     end
 
     def self.verify?(password, password_digest)

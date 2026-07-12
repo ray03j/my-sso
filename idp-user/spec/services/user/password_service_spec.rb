@@ -2,8 +2,9 @@ require 'rails_helper'
 
 RSpec.describe User::PasswordService do
   describe 'パスワードをハッシュ化する (.hash)' do
-    it 'bcrypt ハッシュを生成する' do
+    it '文字列の bcrypt ハッシュを生成する' do
       hash = described_class.hash('password123')
+      expect(hash).to be_a(String)
       expect(hash).to start_with('$2a$')
     end
 
