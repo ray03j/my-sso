@@ -33,5 +33,9 @@ RSpec.describe User::PasswordService do
     it '空のハッシュで false を返す' do
       expect(described_class.verify?('password123', '')).to be false
     end
+
+    it '不正なハッシュで false を返す' do
+      expect(described_class.verify?('password123', 'invalid_digest')).to be false
+    end
   end
 end
