@@ -112,6 +112,41 @@ lefthook install
 | frontend | http://localhost:5173 |
 | demo-rp | http://localhost:5174 |
 
+## テスト実行
+
+idp-user サービスのテストには RSpec を使用しています。ここではホスト側（Docker コンテナ外）で直接実行する方法を記載します。
+
+### 前提
+
+- ホストに Ruby 3.3.0 以降と Bundler がインストールされていること
+- PostgreSQL が起動しており、ポート 5432 でアクセスできること
+- `idp-user` ディレクトリで以下のコマンドを実行すること
+
+```bash
+cd idp-user
+```
+
+### テストデータベースの準備
+
+初回実行時やマイグレーション変更後は、テスト用データベースを準備してください。
+
+```bash
+POSTGRES_USER=sso_user POSTGRES_PASSWORD=sso_password DATABASE_HOST=localhost bundle exec rails db:test:prepare
+```
+
+### 全テストの実行
+
+```bash
+POSTGRES_USER=sso_user POSTGRES_PASSWORD=sso_password DATABASE_HOST=localhost bundle exec rspec
+```
+
+### 特定のテストのみ実行
+
+```bash
+# 特定の spec ファイルを実行
+POSTGRES_USER=sso_user POSTGRES_PASSWORD=sso_password DATABASE_HOST=localhost bundle exec rspec spec/requests/users_spec.rb
+```
+
 ## よく使うコマンド
 
 ```bash
