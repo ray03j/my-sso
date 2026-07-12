@@ -16,7 +16,7 @@ RSpec.describe User::PasswordService do
   end
 
   describe 'パスワードを検証する (.verify?)' do
-    let(:password_digest) { BCrypt::Password.create('password123') }
+    let(:password_digest) { BCrypt::Password.create('password123').to_s }
 
     it '正しいパスワードで true を返す' do
       expect(described_class.verify?('password123', password_digest)).to be true
