@@ -25,15 +25,13 @@ class Client < ApplicationRecord
     BCrypt::Password.new(client_secret_hash) == secret
   end
 
-
   def redirect_uris
-    (super || '').split(/\r?\n|\r/).map(&:strip).compact_blank
+    (super || '').tr("\r", "\n").lines.map(&:strip).compact_blank
   end
 
   def redirect_uris=(uris)
     super(uris.is_a?(Array) ? uris.join("\n") : uris.to_s)
   end
-
 
   def allowed_scopes
     (super || '').split.map(&:strip).compact_blank
@@ -43,7 +41,6 @@ class Client < ApplicationRecord
     super(scopes.is_a?(Array) ? scopes.join(' ') : scopes.to_s)
   end
 
-  
   private
 
   def redirect_uris_must_be_valid_urls
