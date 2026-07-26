@@ -44,10 +44,11 @@ RSpec.describe 'Clients', type: :request do
         expect(json['client_secret']).to be_present
       end
 
-      it 'client_secret_hash が bcrypt で保存される' do
+      it '返された平文 client_secret が保存されたハッシュで検証できる' do
         post '/api/v1/clients', params: valid_params, headers: headers
+        json = response.parsed_body
         client = Client.order(:created_at).last
-        expect(client.client_secret_hash).to start_with('$2a$')
+        expect(client.client_secret_valid?(json['client_secret'])).to be(true)
       end
 
       it 'レスポンスに client_secret_hash が含まれない' do
