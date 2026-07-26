@@ -1,7 +1,7 @@
 module Api
   module V1
     class ClientsController < ApplicationController
-      before_action :require_internal_api_key, only: :show
+      before_action :require_internal_api_key
 
       def index
         render json: { clients: Client.all.map { |client| client_response(client) } }
