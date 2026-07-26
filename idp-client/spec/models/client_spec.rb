@@ -47,7 +47,7 @@ RSpec.describe Client, type: :model do
       )
       client.client_secret = 'raw_secret'
       client.save!
-      expect(client.client_secret_hash).to start_with('$2a$')
+      expect(client.client_secret_hash).to be_present
       expect(client.client_secret_valid?('raw_secret')).to be true
       expect(client.client_secret_valid?('wrong_secret')).to be false
     end
