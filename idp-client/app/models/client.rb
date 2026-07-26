@@ -1,4 +1,5 @@
 require 'bcrypt'
+require 'uri'
 
 class Client < ApplicationRecord
   validates :client_id, presence: true, uniqueness: true
