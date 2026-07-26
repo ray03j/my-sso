@@ -8,8 +8,11 @@ class ApplicationController < ActionController::API
     provided = request.headers['X-Internal-API-Key']
 
     return render json: { error: 'Unauthorized' }, status: :unauthorized if expected.blank? || provided.blank?
-    return if provided == expected
 
-    render json: { error: 'Unauthorized' }, status: :unauthorized
+    valid = ActiveSupport::SecurityUtils.secure_compare(
+      Digest::SHA256.hexdigest(provided),
+      Digest::SHA256.hexdigest(expected)
+    )
+    render json: { error: 'Unauthorized' }, status: :unauthorized unless valid
   end
 end
