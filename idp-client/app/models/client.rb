@@ -17,7 +17,8 @@ class Client < ApplicationRecord
     return if value.blank?
 
     @client_secret = value
-    self.client_secret_hash = BCrypt::Password.create(value)
+    cost = Rails.env.test? ? BCrypt::Engine::MIN_COST : BCrypt::Engine.cost
+    self.client_secret_hash = BCrypt::Password.create(value, cost: cost)
   end
 
   def client_secret_valid?(secret)
