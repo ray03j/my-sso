@@ -1,5 +1,6 @@
 ENV['RAILS_ENV'] ||= 'test'
 ENV['INTERNAL_API_KEY'] ||= 'test-internal-api-key'
+ENV['JWT_SECRET'] ||= 'test-jwt-secret'
 require_relative '../config/environment'
 
 abort('The Rails environment is running in production mode!') if Rails.env.production?
