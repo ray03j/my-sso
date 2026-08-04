@@ -6,4 +6,6 @@ Rails.application.routes.draw do
       end
     end
   end
+
+  get '/authorize', to: 'authorize#show'
 end
