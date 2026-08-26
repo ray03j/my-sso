@@ -4,6 +4,7 @@ Rails.application.routes.draw do
       namespace :auth do
         resource :session, only: %i[create destroy], controller: 'session'
       end
+      resource :consent, only: %i[create], controller: 'consent'
     end
   end
 
