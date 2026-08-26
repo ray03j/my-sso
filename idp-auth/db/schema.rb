@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 4) do
+ActiveRecord::Schema[7.1].define(version: 5) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -32,6 +32,8 @@ ActiveRecord::Schema[7.1].define(version: 4) do
     t.uuid "client_id", null: false
     t.string "redirect_uri"
     t.string "scope"
+    t.string "code_challenge"
+    t.string "code_challenge_method"
     t.datetime "expires_at", null: false
     t.boolean "used", default: false, null: false
     t.datetime "created_at", null: false

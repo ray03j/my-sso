@@ -2,15 +2,27 @@ module Auth
   class AuthorizationCodeService
     class InvalidRequestError < StandardError; end
 
-    def self.issue(user_id:, client_id:, redirect_uri:, scope: 'openid')
+    def self.issue(user_id:, client_id:, redirect_uri:, scope: 'openid', code_challenge:, code_challenge_method:)
       validate_params!(user_id: user_id, client_id: client_id, redirect_uri: redirect_uri)
+      validate_pkce!(code_challenge: code_challenge, code_challenge_method: code_challenge_method)
 
       AuthorizationCode.generate_for(
         user_id: user_id,
         client_id: client_id,
         redirect_uri: redirect_uri,
-        scope: scope
+        scope: scope,
+        code_challenge: code_challenge,
+        code_challenge_method: code_challenge_method
       )
+    end
+
+    def self.verify_pkce(record:, code_verifier:)
+      return false if record.code_challenge.blank?
+      return false if record.code_challenge_method != 'S256'
+      return false if code_verifier.blank?
+
+      calculated = Base64.urlsafe_encode64(Digest::SHA256.digest(code_verifier), padding: false)
+      ActiveSupport::SecurityUtils.fixed_length_secure_compare(calculated, record.code_challenge)
     end
 
     def self.verify(code:, client_id:, redirect_uri:)
@@ -34,6 +46,11 @@ module Auth
       raise InvalidRequestError, 'user_id is required' if user_id.blank?
       raise InvalidRequestError, 'client_id is required' if client_id.blank?
       raise InvalidRequestError, 'redirect_uri is required' if redirect_uri.blank?
+    end
+
+    def self.validate_pkce!(code_challenge:, code_challenge_method:)
+      raise InvalidRequestError, 'code_challenge is required' if code_challenge.blank?
+      raise InvalidRequestError, 'unsupported code_challenge_method' unless code_challenge_method == 'S256'
     end
   end
 end
