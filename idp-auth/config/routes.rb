@@ -8,4 +8,5 @@ Rails.application.routes.draw do
   end
 
   get '/authorize', to: 'authorize#show'
+  post '/token', to: 'tokens#create'
 end
