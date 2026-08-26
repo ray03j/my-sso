@@ -82,4 +82,29 @@ RSpec.describe 'Users', type: :request do
       end
     end
   end
+
+  describe 'GET /api/v1/users/:id' do
+    let!(:user) { create(:user, email: 'test@example.com', password: 'password123', name: 'Test User') }
+
+    context '存在するユーザーの場合' do
+      it '200 OK を返す' do
+        get "/api/v1/users/#{user.id}"
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'ユーザー情報を返す（password_digest 除く）' do
+        get "/api/v1/users/#{user.id}"
+        json = response.parsed_body
+        expect(json).to include('id', 'email', 'name')
+        expect(json).not_to include('password_digest')
+      end
+    end
+
+    context '存在しないユーザーの場合' do
+      it '404 Not Found を返す' do
+        get '/api/v1/users/00000000-0000-0000-0000-000000000000'
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+  end
 end
