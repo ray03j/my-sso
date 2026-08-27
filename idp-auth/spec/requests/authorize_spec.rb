@@ -106,4 +106,11 @@ RSpec.describe 'Authorize', type: :request do
       expect(response).to redirect_to('http://localhost:5174/callback?error=invalid_request')
     end
   end
+
+  context '必須パラメータが空文字の場合' do
+    it 'error=invalid_request を返す' do
+      get '/authorize', params: valid_params.merge(state: '')
+      expect(response).to redirect_to('http://localhost:5174/callback?error=invalid_request')
+    end
+  end
 end
