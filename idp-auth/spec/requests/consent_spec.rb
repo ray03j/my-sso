@@ -29,6 +29,18 @@ RSpec.describe 'Consent', type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.parsed_body['approved']).to be false
       end
+
+      context 'approved=true で必須パラメータが欠落している場合' do
+        it 'client_id が空なら 400 を返す' do
+          post '/api/v1/consent', params: { scope: 'openid profile', approved: true }
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it 'scope が空なら 400 を返す' do
+          post '/api/v1/consent', params: { client_id: client_id, approved: true }
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
     end
 
     context '未ログインの場合' do
