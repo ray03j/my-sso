@@ -26,14 +26,12 @@ class UserinfoController < ApplicationController
   def fetch_user(user_id)
     response = HTTParty.get(
       "#{idp_user_url}/api/v1/users/#{user_id}",
-      headers: {
-        'X-Internal-API-Key' => internal_api_key,
-        'Accept' => 'application/json'
-      }
+      headers: { 'X-Internal-API-Key' => internal_api_key, 'Accept' => 'application/json' },
+      timeout: 5
     )
-    return nil unless response.success?
-
-    response.parsed_response
+    response.success? ? response.parsed_response : nil
+  rescue HTTParty::Error, Timeout::Error, SocketError, Errno::ECONNREFUSED
+    nil
   end
 
   def render_token_error
