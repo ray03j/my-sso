@@ -85,6 +85,11 @@ RSpec.describe 'Tokens', type: :request do
       post '/token', params: valid_params.merge(code_verifier: 'wrong_verifier')
       expect(response).to have_http_status(:bad_request)
     end
+
+    it '認可コードを使用済みにしない' do
+      post '/token', params: valid_params.merge(code_verifier: 'wrong_verifier')
+      expect(authorization_code.reload.used?).to be false
+    end
   end
 
   context '既に使用済みの認可コードの場合' do
