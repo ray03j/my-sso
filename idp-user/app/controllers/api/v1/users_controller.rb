@@ -1,6 +1,8 @@
 module Api
   module V1
     class UsersController < ApplicationController
+      before_action :require_internal_api_key, only: :show
+
       def show
         user = User.find(params[:id])
         render json: { id: user.id, email: user.email, name: user.name }
