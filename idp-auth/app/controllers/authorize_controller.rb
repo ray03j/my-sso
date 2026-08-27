@@ -35,7 +35,7 @@ class AuthorizeController < ApplicationController
   private
 
   def validate_required_params!
-    missing = REQUIRED_PARAMS - params.keys
+    missing = REQUIRED_PARAMS.select { |p| params[p].blank? }
     raise AuthorizeError, 'invalid_request' if missing.any?
   end
 
