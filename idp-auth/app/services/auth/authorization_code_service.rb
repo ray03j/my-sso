@@ -34,9 +34,11 @@ module Auth
       record
     end
 
-    def self.consume(code:, client_id:, redirect_uri:)
+    def self.consume(code:, client_id:, redirect_uri:, code_verifier:)
       record = verify(code: code, client_id: client_id, redirect_uri: redirect_uri)
       return nil if record.nil?
+
+      return nil unless verify_pkce(record: record, code_verifier: code_verifier)
 
       record.update!(used: true)
       record

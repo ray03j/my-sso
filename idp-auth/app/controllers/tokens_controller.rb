@@ -18,16 +18,10 @@ class TokensController < ApplicationController
     code_record = Auth::AuthorizationCodeService.consume(
       code: params[:code],
       client_id: params[:client_id],
-      redirect_uri: params[:redirect_uri]
-    )
-    return render_token_error('invalid_grant', :bad_request) unless code_record
-
-    unless Auth::AuthorizationCodeService.verify_pkce(
-      record: code_record,
+      redirect_uri: params[:redirect_uri],
       code_verifier: params[:code_verifier]
     )
-      return render_token_error('invalid_grant', :bad_request)
-    end
+    return render_token_error('invalid_grant', :bad_request) unless code_record
 
     access_token = Auth::TokenService.issue_access_token(
       user_id: code_record.user_id,

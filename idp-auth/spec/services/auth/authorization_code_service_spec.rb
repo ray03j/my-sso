@@ -167,18 +167,30 @@ RSpec.describe Auth::AuthorizationCodeService do
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001',
         redirect_uri: 'http://localhost:5174/callback',
-        code_challenge: code_challenge,
+        code_challenge: Base64.urlsafe_encode64(Digest::SHA256.digest(code_verifier), padding: false),
         code_challenge_method: 'S256'
       )
     end
 
-    it '認可コードを検証後に使用済みにする' do
+    it 'PKCE 検証を通して認可コードを使用済みにする' do
       described_class.consume(
         code: authorization_code.code,
         client_id: authorization_code.client_id,
-        redirect_uri: 'http://localhost:5174/callback'
+        redirect_uri: 'http://localhost:5174/callback',
+        code_verifier: code_verifier
       )
       expect(authorization_code.reload.used?).to be true
+    end
+
+    it 'code_verifier が不一致の場合は使用済みにせず nil を返す' do
+      result = described_class.consume(
+        code: authorization_code.code,
+        client_id: authorization_code.client_id,
+        redirect_uri: 'http://localhost:5174/callback',
+        code_verifier: 'wrong-verifier'
+      )
+      expect(result).to be_nil
+      expect(authorization_code.reload.used?).to be false
     end
   end
 end
