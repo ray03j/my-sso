@@ -32,12 +32,12 @@ ActiveRecord::Schema[7.1].define(version: 5) do
     t.uuid "client_id", null: false
     t.string "redirect_uri"
     t.string "scope"
-    t.string "code_challenge"
-    t.string "code_challenge_method"
     t.datetime "expires_at", null: false
     t.boolean "used", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "code_challenge"
+    t.string "code_challenge_method"
     t.index ["client_id", "used"], name: "index_authorization_codes_on_client_id_and_used"
     t.index ["code"], name: "index_authorization_codes_on_code", unique: true
   end
