@@ -85,24 +85,40 @@ RSpec.describe 'Users', type: :request do
 
   describe 'GET /api/v1/users/:id' do
     let!(:user) { create(:user, email: 'test@example.com', password: 'password123', name: 'Test User') }
+    let(:internal_api_key) { ENV.fetch('INTERNAL_API_KEY') }
+    let(:headers) { { 'X-Internal-API-Key' => internal_api_key } }
 
-    context '存在するユーザーの場合' do
+    context '有効なAPIキーの場合' do
       it '200 OK を返す' do
-        get "/api/v1/users/#{user.id}"
+        get "/api/v1/users/#{user.id}", headers: headers
         expect(response).to have_http_status(:ok)
       end
 
       it 'ユーザー情報を返す（password_digest 除く）' do
-        get "/api/v1/users/#{user.id}"
+        get "/api/v1/users/#{user.id}", headers: headers
         json = response.parsed_body
         expect(json).to include('id', 'email', 'name')
         expect(json).not_to include('password_digest')
       end
     end
 
+    context 'APIキーがない場合' do
+      it '401 Unauthorized を返す' do
+        get "/api/v1/users/#{user.id}"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'APIキーが不正の場合' do
+      it '401 Unauthorized を返す' do
+        get "/api/v1/users/#{user.id}", headers: { 'X-Internal-API-Key' => 'wrong-key' }
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
     context '存在しないユーザーの場合' do
       it '404 Not Found を返す' do
-        get '/api/v1/users/00000000-0000-0000-0000-000000000000'
+        get '/api/v1/users/00000000-0000-0000-0000-000000000000', headers: headers
         expect(response).to have_http_status(:not_found)
       end
     end
