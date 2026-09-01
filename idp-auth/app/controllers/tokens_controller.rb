@@ -1,5 +1,3 @@
-require 'httparty'
-
 class TokensController < ApplicationController
   ID_TOKEN_EXPIRES_IN = 3600 # 1時間
 
@@ -12,7 +10,11 @@ class TokensController < ApplicationController
     return unless validate_required_params!
     return unless validate_grant_type!
 
-    client = authenticate_client(params[:client_id], params[:client_secret], params[:redirect_uri])
+    client = Auth::ClientAuthenticationService.call(
+      client_id: params[:client_id],
+      client_secret: params[:client_secret],
+      redirect_uri: params[:redirect_uri]
+    )
     return render_token_error('invalid_client', :unauthorized) unless client
 
     code_record = Auth::AuthorizationCodeService.consume(
@@ -66,26 +68,6 @@ class TokensController < ApplicationController
   end
   # rubocop:enable Naming/PredicateMethod
 
-  # rubocop:disable Metrics/MethodLength
-  def authenticate_client(client_id, client_secret, redirect_uri)
-    response = HTTParty.post(
-      "#{idp_client_url}/api/v1/clients/verify",
-      headers: {
-        'X-Internal-API-Key' => internal_api_key,
-        'Content-Type' => 'application/json'
-      },
-      body: {
-        client_id: client_id,
-        client_secret: client_secret,
-        redirect_uri: redirect_uri
-      }.to_json
-    )
-    return nil unless response.success?
-
-    response.parsed_response
-  end
-  # rubocop:enable Metrics/MethodLength
-
   def issue_id_token(code_record, client, nonce, access_token)
     payload = {
       iss: Oidc::Discovery::ISSUER,
@@ -111,13 +93,5 @@ class TokensController < ApplicationController
 
   def render_token_error(error, status)
     render json: { error: error }, status: status
-  end
-
-  def idp_client_url
-    ENV.fetch('IDP_CLIENT_URL')
-  end
-
-  def internal_api_key
-    ENV.fetch('INTERNAL_API_KEY')
   end
 end
