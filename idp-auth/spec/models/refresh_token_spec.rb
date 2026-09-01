@@ -38,5 +38,33 @@ RSpec.describe RefreshToken, type: :model do
       expect(token.token.length).to be >= 32
       expect(token.scope).to eq('openid email')
     end
+
+    it 'expires_at に7日後を設定する' do
+      token = described_class.generate_for(user_id: user_id, client_id: client_id)
+      expect(token.expires_at).to be_within(1.second).of(RefreshToken::EXPIRES_IN.seconds.from_now)
+    end
+  end
+
+  describe '#expired?' do
+    it '期限内の場合は false' do
+      token = described_class.generate_for(user_id: user_id, client_id: client_id)
+      expect(token).not_to be_expired
+    end
+
+    it '期限切れの場合は true' do
+      token = described_class.generate_for(user_id: user_id, client_id: client_id)
+      token.update!(expires_at: 1.second.ago)
+      expect(token).to be_expired
+    end
+  end
+
+  describe '#revoked? / #revoke!' do
+    it 'revoke! で失効し revoked? が true になる' do
+      token = described_class.generate_for(user_id: user_id, client_id: client_id)
+      expect(token).not_to be_revoked
+
+      token.revoke!
+      expect(token.reload).to be_revoked
+    end
   end
 end
