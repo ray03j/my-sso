@@ -1,6 +1,4 @@
 class TokensController < ApplicationController
-  ID_TOKEN_EXPIRES_IN = 3600 # 1時間
-
   REQUIRED_PARAMS = %w[
     grant_type code redirect_uri code_verifier client_id client_secret
   ].freeze
@@ -30,7 +28,12 @@ class TokensController < ApplicationController
       client_id: code_record.client_id,
       scope: code_record.scope
     )
-    id_token = issue_id_token(code_record, client, params[:nonce], access_token)
+    id_token = Auth::TokenService.issue_id_token(
+      user_id: code_record.user_id,
+      client_id: client['client_id'],
+      nonce: params[:nonce],
+      access_token: access_token
+    )
     refresh_token = Auth::TokenService.issue_refresh_token(
       user_id: code_record.user_id,
       client_id: code_record.client_id,
@@ -67,29 +70,6 @@ class TokensController < ApplicationController
     false
   end
   # rubocop:enable Naming/PredicateMethod
-
-  def issue_id_token(code_record, client, nonce, access_token)
-    payload = {
-      iss: Oidc::Discovery::ISSUER,
-      sub: code_record.user_id,
-      aud: client['client_id'],
-      exp: ID_TOKEN_EXPIRES_IN.seconds.from_now.to_i,
-      iat: Time.current.to_i,
-      nonce: nonce,
-      at_hash: at_hash(access_token)
-    }.compact
-
-    Oidc::JwtSigner.sign(payload)
-  end
-
-  def at_hash(access_token)
-    return nil if access_token.blank?
-
-    Base64.urlsafe_encode64(
-      Digest::SHA256.digest(access_token)[0, 16],
-      padding: false
-    )
-  end
 
   def render_token_error(error, status)
     render json: { error: error }, status: status
