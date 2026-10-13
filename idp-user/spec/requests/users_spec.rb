@@ -81,6 +81,37 @@ RSpec.describe 'Users', type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
       end
     end
+
+    context '境界値・形式・空白のみの入力の場合' do
+      it '7文字の password ではユーザーを作成せず 422 を返す' do
+        expect do
+          post '/api/v1/users', params: { user: { email: 'edge@example.com', password: 'a' * 7, name: 'Edge' } }
+        end.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it '101文字の name ではユーザーを作成せず 422 を返す' do
+        params = { user: { email: 'edge@example.com', password: 'password123', name: 'あ' * 101 } }
+        expect do
+          post '/api/v1/users', params: params
+        end.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it '不正な形式の email ではユーザーを作成せず 422 を返す' do
+        expect do
+          post '/api/v1/users', params: { user: { email: 'invalid-email', password: 'password123', name: 'Edge' } }
+        end.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it '空白のみの name ではユーザーを作成せず 422 を返す' do
+        expect do
+          post '/api/v1/users', params: { user: { email: 'edge@example.com', password: 'password123', name: '   ' } }
+        end.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
   end
 
   describe 'GET /api/v1/users/:id' do
