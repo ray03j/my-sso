@@ -41,6 +41,19 @@ RSpec.describe 'Consent', type: :request do
           expect(response).to have_http_status(:bad_request)
         end
       end
+
+      it '同一クライアントへの再同意はスコープを上書きする' do
+        post '/api/v1/consent', params: { client_id: client_id, scope: 'openid profile', approved: true }
+        post '/api/v1/consent', params: { client_id: client_id, scope: 'openid profile email', approved: true }
+
+        expect(Consent.count).to eq(1)
+        expect(Consent.last.scope).to eq('openid profile email')
+      end
+
+      it 'スコープの前後の空白は除去して記録される' do
+        post '/api/v1/consent', params: { client_id: client_id, scope: '  openid profile  ', approved: true }
+        expect(Consent.last.scope).to eq('openid profile')
+      end
     end
 
     context '未ログインの場合' do

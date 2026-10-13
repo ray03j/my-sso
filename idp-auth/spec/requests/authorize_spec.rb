@@ -113,4 +113,44 @@ RSpec.describe 'Authorize', type: :request do
       expect(response).to redirect_to('http://localhost:5174/callback?error=invalid_request')
     end
   end
+
+  context '同意を拒否した後に再度 authorize を実行した場合' do
+    before do
+      sign_in(user_id: user_id)
+      post '/api/v1/consent', params: { client_id: client['client_id'], scope: 'openid profile', approved: false }
+    end
+
+    it '再び同意画面へリダイレクトする' do
+      get '/authorize', params: valid_params
+      expect(response).to redirect_to('/consent')
+    end
+
+    it '認可コードを発行しない' do
+      expect do
+        get '/authorize', params: valid_params
+      end.not_to change(AuthorizationCode, :count)
+    end
+  end
+
+  context '同意済みだが要求スコープが同意内容と異なる場合' do
+    before do
+      sign_in(user_id: user_id)
+      Consent.create!(
+        user_id: user_id,
+        client_id: client['client_id'],
+        scope: 'openid profile'
+      )
+    end
+
+    it '再び同意画面へリダイレクトする' do
+      get '/authorize', params: valid_params.merge(scope: 'openid email')
+      expect(response).to redirect_to('/consent')
+    end
+
+    it '認可コードを発行しない' do
+      expect do
+        get '/authorize', params: valid_params.merge(scope: 'openid email')
+      end.not_to change(AuthorizationCode, :count)
+    end
+  end
 end
