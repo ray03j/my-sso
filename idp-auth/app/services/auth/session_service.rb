@@ -7,7 +7,7 @@ module Auth
       return nil unless response.success?
 
       response.parsed_response['user']
-    rescue Net::OpenTimeout, Net::ReadTimeout
+    rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED, SocketError, HTTParty::Error
       nil
     end
 

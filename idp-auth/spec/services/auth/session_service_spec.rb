@@ -51,5 +51,17 @@ RSpec.describe Auth::SessionService do
         expect(user).to be_nil
       end
     end
+
+    context 'idp-user へ接続できない場合' do
+      it '接続拒否では例外を外部に漏らさず nil を返す' do
+        allow(HTTParty).to receive(:post).and_raise(Errno::ECONNREFUSED)
+        expect(described_class.authenticate('test@example.com', 'password123')).to be_nil
+      end
+
+      it 'HTTPartyのエラーでは例外を外部に漏らさず nil を返す' do
+        allow(HTTParty).to receive(:post).and_raise(HTTParty::Error)
+        expect(described_class.authenticate('test@example.com', 'password123')).to be_nil
+      end
+    end
   end
 end
