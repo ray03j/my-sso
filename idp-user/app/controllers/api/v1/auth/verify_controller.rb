@@ -2,6 +2,8 @@ module Api
   module V1
     module Auth
       class VerifyController < ApplicationController
+        before_action :require_internal_api_key
+
         def create
           user = User::AuthenticationService.authenticate(
             params[:email],
