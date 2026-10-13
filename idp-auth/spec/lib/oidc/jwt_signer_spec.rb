@@ -25,5 +25,26 @@ RSpec.describe Oidc::JwtSigner do
         described_class.verify(tampered)
       end.to raise_error(JWT::VerificationError)
     end
+
+    it '期限切れのJWTを拒否する' do
+      expired = described_class.sign({ sub: 1, exp: 1.hour.ago.to_i })
+      expect do
+        described_class.verify(expired)
+      end.to raise_error(JWT::ExpiredSignature)
+    end
+
+    it '異なるシークレットで署名されたJWTを拒否する' do
+      forged = JWT.encode({ sub: 1, exp: 1.hour.from_now.to_i }, 'wrong-secret', 'HS256')
+      expect do
+        described_class.verify(forged)
+      end.to raise_error(JWT::VerificationError)
+    end
+
+    it 'alg=none の署名なしJWTを拒否する' do
+      unsigned = JWT.encode({ sub: 1, exp: 1.hour.from_now.to_i }, nil, 'none')
+      expect do
+        described_class.verify(unsigned)
+      end.to raise_error(JWT::IncorrectAlgorithm)
+    end
   end
 end

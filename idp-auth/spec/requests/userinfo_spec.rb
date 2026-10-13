@@ -46,6 +46,48 @@ RSpec.describe 'Userinfo', type: :request do
       end
     end
 
+    context '期限切れのトークンの場合' do
+      let(:expired_token) do
+        Oidc::JwtSigner.sign(
+          { sub: user_id, client_id: client_id, scope: 'openid',
+            iat: 2.hours.ago.to_i, exp: 1.hour.ago.to_i }
+        )
+      end
+
+      it '401 Unauthorized を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{expired_token}" }
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it 'error=invalid_token を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{expired_token}" }
+        expect(response.parsed_body['error']).to eq('invalid_token')
+      end
+    end
+
+    context '異なるシークレットで署名されたトークンの場合' do
+      let(:forged_token) do
+        JWT.encode(
+          { sub: user_id, client_id: client_id, scope: 'openid',
+            iat: Time.current.to_i, exp: 1.hour.from_now.to_i },
+          'wrong-secret', 'HS256'
+        )
+      end
+
+      it '401 Unauthorized を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{forged_token}" }
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'Authorization ヘッダが Bearer 形式でない場合' do
+      it '401 Unauthorized を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Basic #{access_token}" }
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body['error']).to eq('invalid_token')
+      end
+    end
+
     context 'idp-user がユーザーを見つけられない場合' do
       before do
         allow(HTTParty).to receive(:get).and_return(
