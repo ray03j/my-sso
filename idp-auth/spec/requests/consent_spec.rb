@@ -54,6 +54,18 @@ RSpec.describe 'Consent', type: :request do
         post '/api/v1/consent', params: { client_id: client_id, scope: '  openid profile  ', approved: true }
         expect(Consent.last.scope).to eq('openid profile')
       end
+
+      it '連続する空白・タブ・改行は単一スペースに正規化して記録される' do
+        post '/api/v1/consent', params: { client_id: client_id, scope: "openid\t profile\r\n email", approved: true }
+        expect(Consent.last.scope).to eq('openid profile email')
+      end
+
+      it '空白のみのスコープは 400 を返し記録しない' do
+        expect do
+          post '/api/v1/consent', params: { client_id: client_id, scope: '   ', approved: true }
+        end.not_to change(Consent, :count)
+        expect(response).to have_http_status(:bad_request)
+      end
     end
 
     context '未ログインの場合' do

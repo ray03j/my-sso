@@ -72,6 +72,11 @@ RSpec.describe 'Authorize', type: :request do
         get '/authorize', params: valid_params
       end.to change(AuthorizationCode, :count).by(1)
     end
+
+    it 'スコープの空白違いの再要求では同意済みと判定して認可コードを発行する' do
+      get '/authorize', params: valid_params.merge(scope: '  openid   profile  ')
+      expect(response).to redirect_to(%r{http://localhost:5174/callback\?code=.+&state=abc123})
+    end
   end
 
   context '無効な client_id の場合' do
