@@ -96,6 +96,42 @@ RSpec.describe 'Clients', type: :request do
         end.not_to change(Client, :count)
       end
     end
+
+    context 'URL・スコープの境界値の場合' do
+      it 'スキームのみ（http://）の URL ではクライアントを作成せず 422 を返す' do
+        params = { client: { name: 'Edge RP', redirect_uris: ['http://'], allowed_scopes: %w[openid] } }
+        expect do
+          post '/api/v1/clients', params: params, headers: headers
+        end.not_to change(Client, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it '大文字のスコープではクライアントを作成せず 422 を返す' do
+        params = { client: { name: 'Edge RP', redirect_uris: ['http://localhost:5174/callback'], allowed_scopes: %w[OPENID] } }
+        expect do
+          post '/api/v1/clients', params: params, headers: headers
+        end.not_to change(Client, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it '空白のみの redirect_uris ではクライアントを作成せず 422 を返す' do
+        params = { client: { name: 'Edge RP', redirect_uris: ['   '], allowed_scopes: %w[openid] } }
+        expect do
+          post '/api/v1/clients', params: params, headers: headers
+        end.not_to change(Client, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it '重複したスコープは一意に正規化して 201 を返す' do
+        params = { client: { name: 'Edge RP', redirect_uris: ['http://localhost:5174/callback'], allowed_scopes: %w[openid openid profile] } }
+        expect do
+          post '/api/v1/clients', params: params, headers: headers
+        end.to change(Client, :count).by(1)
+        expect(response).to have_http_status(:created)
+        client = Client.order(:created_at).last
+        expect(client.allowed_scopes).to eq(%w[openid profile])
+      end
+    end
   end
 
   describe 'GET /api/v1/clients' do

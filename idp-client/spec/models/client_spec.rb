@@ -53,6 +53,95 @@ RSpec.describe Client, type: :model do
     end
   end
 
+  describe 'redirect_uris の境界値' do
+    it 'https URL は有効' do
+      client = build(:client, redirect_uris: ['https://app.example.com/callback'])
+      expect(client).to be_valid
+    end
+
+    it 'スキームのみ（http://）の URL は無効' do
+      client = build(:client, redirect_uris: ['http://'])
+      expect(client).not_to be_valid
+      expect(client.errors[:redirect_uris]).to be_present
+    end
+
+    it 'ftp スキームの URL は無効' do
+      client = build(:client, redirect_uris: ['ftp://example.com/callback'])
+      expect(client).not_to be_valid
+      expect(client.errors[:redirect_uris]).to be_present
+    end
+
+    it 'javascript 疑似スキームは無効' do
+      client = build(:client, redirect_uris: ['javascript:alert(1)'])
+      expect(client).not_to be_valid
+      expect(client.errors[:redirect_uris]).to be_present
+    end
+
+    it 'URL の配列が空の場合は無効' do
+      client = build(:client, redirect_uris: [])
+      expect(client).not_to be_valid
+      expect(client.errors[:redirect_uris]).to be_present
+    end
+
+    it '空白のみの URL は無効' do
+      client = build(:client, redirect_uris: ['   '])
+      expect(client).not_to be_valid
+      expect(client.errors[:redirect_uris]).to be_present
+    end
+
+    it '複数 URL のうち 1 つでも不正なら無効' do
+      client = build(:client, redirect_uris: ['https://app.example.com/callback', 'not-a-url'])
+      expect(client).not_to be_valid
+      expect(client.errors[:redirect_uris]).to be_present
+    end
+
+    it 'CRLF 区切りと前後の空白が正規化される' do
+      client = create(:client, redirect_uris: ["  https://a.example.com/cb \r\n https://b.example.com/cb  "])
+      expect(client.redirect_uris).to eq(['https://a.example.com/cb', 'https://b.example.com/cb'])
+    end
+  end
+
+  describe 'allowed_scopes の境界値と組み合わせ' do
+    it '全サポートスコープの組み合わせは有効' do
+      client = build(:client, allowed_scopes: %w[openid profile email])
+      expect(client).to be_valid
+    end
+
+    it '大文字のスコープは無効' do
+      client = build(:client, allowed_scopes: %w[OPENID])
+      expect(client).not_to be_valid
+      expect(client.errors[:allowed_scopes]).to be_present
+    end
+
+    it 'カンマ区切りのスコープは無効' do
+      client = build(:client, allowed_scopes: ['openid,profile'])
+      expect(client).not_to be_valid
+      expect(client.errors[:allowed_scopes]).to be_present
+    end
+
+    it 'スコープが空配列の場合は無効' do
+      client = build(:client, allowed_scopes: [])
+      expect(client).not_to be_valid
+      expect(client.errors[:allowed_scopes]).to be_present
+    end
+
+    it '空白のみのスコープは無効' do
+      client = build(:client, allowed_scopes: ['   '])
+      expect(client).not_to be_valid
+      expect(client.errors[:allowed_scopes]).to be_present
+    end
+
+    it '連続する空白で区切られたスコープが正規化される' do
+      client = create(:client, allowed_scopes: ['openid    profile'])
+      expect(client.allowed_scopes).to eq(%w[openid profile])
+    end
+
+    it '重複したスコープは一意に正規化される' do
+      client = create(:client, allowed_scopes: %w[openid profile openid])
+      expect(client.allowed_scopes).to eq(%w[openid profile])
+    end
+  end
+
   describe '配列変換' do
     it 'redirect_uris を配列として読み書きできる' do
       client = create(:client, redirect_uris: ['http://a/callback', 'http://b/callback'])
