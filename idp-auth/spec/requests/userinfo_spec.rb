@@ -78,6 +78,11 @@ RSpec.describe 'Userinfo', type: :request do
         get '/userinfo', headers: { 'Authorization' => "Bearer #{forged_token}" }
         expect(response).to have_http_status(:unauthorized)
       end
+
+      it 'error=invalid_token を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{forged_token}" }
+        expect(response.parsed_body['error']).to eq('invalid_token')
+      end
     end
 
     context 'Authorization ヘッダが Bearer 形式でない場合' do
