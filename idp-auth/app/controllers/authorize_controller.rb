@@ -68,7 +68,7 @@ class AuthorizeController < ApplicationController
     Consent.exists?(
       user_id: current_session_user_id,
       client_id: client['client_id'],
-      scope: params[:scope]
+      scope: Consent.normalize_scope(params[:scope])
     )
   end
 
