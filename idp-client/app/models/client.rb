@@ -2,6 +2,8 @@ require 'bcrypt'
 require 'uri'
 
 class Client < ApplicationRecord
+  before_validation :normalize_allowed_scopes
+
   validates :client_id, presence: true, uniqueness: true
   validates :client_secret_hash, presence: true
   validates :name, presence: true
@@ -36,7 +38,7 @@ class Client < ApplicationRecord
   end
 
   def allowed_scopes
-    (super || '').split.map(&:strip).compact_blank.uniq
+    (super || '').split.map(&:strip).compact_blank
   end
 
   def allowed_scopes=(scopes)
@@ -44,6 +46,10 @@ class Client < ApplicationRecord
   end
 
   private
+
+  def normalize_allowed_scopes
+    self.allowed_scopes = allowed_scopes.uniq.join(' ')
+  end
 
   def redirect_uris_must_be_valid_urls
     redirect_uris.each do |uri|

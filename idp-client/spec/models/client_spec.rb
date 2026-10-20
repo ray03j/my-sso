@@ -139,6 +139,7 @@ RSpec.describe Client, type: :model do
     it '重複したスコープは一意に正規化される' do
       client = create(:client, allowed_scopes: %w[openid profile openid])
       expect(client.allowed_scopes).to eq(%w[openid profile])
+      expect(client.read_attribute(:allowed_scopes)).to eq('openid profile')
     end
   end
 
