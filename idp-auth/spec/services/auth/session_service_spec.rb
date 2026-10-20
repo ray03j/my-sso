@@ -62,6 +62,17 @@ RSpec.describe Auth::SessionService do
         allow(HTTParty).to receive(:post).and_raise(HTTParty::Error)
         expect(described_class.authenticate('test@example.com', 'password123')).to be_nil
       end
+
+      it '接続拒否を例外クラスのみでログに記録する' do
+        allow(Rails.logger).to receive(:warn)
+        allow(HTTParty).to receive(:post).and_raise(Errno::ECONNREFUSED)
+
+        expect(described_class.authenticate('test@example.com', 'password123')).to be_nil
+
+        expect(Rails.logger).to have_received(:warn).with(a_string_including('Errno::ECONNREFUSED'))
+        expect(Rails.logger).not_to have_received(:warn).with(a_string_including('test@example.com'))
+        expect(Rails.logger).not_to have_received(:warn).with(a_string_including('password123'))
+      end
     end
   end
 end
