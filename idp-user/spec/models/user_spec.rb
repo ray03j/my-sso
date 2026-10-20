@@ -63,6 +63,17 @@ RSpec.describe User, type: :model do
       expect(user).not_to be_valid
       expect(user.errors[:password]).to be_present
     end
+
+    it 'password が72バイトの多バイト文字列の場合、有効' do
+      user = build(:user, password: 'あ' * 24)
+      expect(user).to be_valid
+    end
+
+    it 'password が73バイトの多バイト文字列の場合、無効' do
+      user = build(:user, password: "#{'あ' * 24}a")
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to be_present
+    end
   end
 
   describe 'email の形式' do
