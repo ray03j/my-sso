@@ -1,6 +1,8 @@
+inherit_from: ../.rubocop.yml
+
 AllCops:
   TargetRubyVersion: 3.3
-  NewCops: enable
+  NewCops: disable
   SuggestExtensions: false
   Exclude:
     - 'db/schema.rb'
@@ -25,3 +27,6 @@ Metrics/BlockLength:
 Metrics/MethodLength:
   Exclude:
     - 'db/migrate/**/*'
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
