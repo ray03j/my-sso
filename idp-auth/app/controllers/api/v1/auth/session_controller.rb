@@ -7,13 +7,11 @@ module Api
             params[:email],
             params[:password]
           )
+          return render_unauthorized unless user
 
-          if user
-            assign_session_user(user['id'])
-            render json: success_response(user), status: :ok
-          else
-            render json: { error: 'Invalid email or password' }, status: :unauthorized
-          end
+          reset_session
+          assign_session_user(user['id'])
+          render json: success_response(user), status: :ok
         end
 
         def destroy
@@ -22,6 +20,10 @@ module Api
         end
 
         private
+
+        def render_unauthorized
+          render json: { error: 'Invalid email or password' }, status: :unauthorized
+        end
 
         def success_response(user)
           {

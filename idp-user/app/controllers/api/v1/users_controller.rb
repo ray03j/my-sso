@@ -1,7 +1,7 @@
 module Api
   module V1
     class UsersController < ApplicationController
-      before_action :require_internal_api_key, only: :show
+      before_action :require_internal_api_key, only: %i[create show]
 
       def show
         user = User.find(params[:id])
