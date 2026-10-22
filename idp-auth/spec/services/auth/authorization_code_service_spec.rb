@@ -192,5 +192,30 @@ RSpec.describe Auth::AuthorizationCodeService do
       expect(result).to be_nil
       expect(authorization_code.reload.used?).to be false
     end
+
+    it '一度使用した認可コードの再利用を拒否する' do
+      consume_params = {
+        code: authorization_code.code,
+        client_id: authorization_code.client_id,
+        redirect_uri: 'http://localhost:5174/callback',
+        code_verifier: code_verifier
+      }
+      expect(described_class.consume(**consume_params)).to be_present
+
+      expect(described_class.consume(**consume_params)).to be_nil
+      expect(authorization_code.reload.used?).to be true
+    end
+
+    it '有効期限切れの認可コードは使用済みにせず nil を返す' do
+      authorization_code.update!(expires_at: 1.second.ago)
+      result = described_class.consume(
+        code: authorization_code.code,
+        client_id: authorization_code.client_id,
+        redirect_uri: 'http://localhost:5174/callback',
+        code_verifier: code_verifier
+      )
+      expect(result).to be_nil
+      expect(authorization_code.reload.used?).to be false
+    end
   end
 end
