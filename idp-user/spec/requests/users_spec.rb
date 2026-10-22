@@ -60,7 +60,7 @@ RSpec.describe 'Users', type: :request do
 
       it '422 Unprocessable Entity を返す' do
         post '/api/v1/users', params: invalid_params, headers: headers
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'エラーメッセージを返す' do
@@ -81,7 +81,7 @@ RSpec.describe 'Users', type: :request do
 
       it '422 Unprocessable Entity を返す' do
         post '/api/v1/users', params: valid_params, headers: headers
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
@@ -113,7 +113,7 @@ RSpec.describe 'Users', type: :request do
                params: { user: { email: 'edge@example.com', password: 'a' * 7, name: 'Edge' } },
                headers: headers
         end.not_to change(User, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it '101文字の name ではユーザーを作成せず 422 を返す' do
@@ -121,7 +121,7 @@ RSpec.describe 'Users', type: :request do
         expect do
           post '/api/v1/users', params: params, headers: headers
         end.not_to change(User, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it '不正な形式の email ではユーザーを作成せず 422 を返す' do
@@ -130,7 +130,7 @@ RSpec.describe 'Users', type: :request do
                params: { user: { email: 'invalid-email', password: 'password123', name: 'Edge' } },
                headers: headers
         end.not_to change(User, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it '空白のみの name ではユーザーを作成せず 422 を返す' do
@@ -139,7 +139,7 @@ RSpec.describe 'Users', type: :request do
                params: { user: { email: 'edge@example.com', password: 'password123', name: '   ' } },
                headers: headers
         end.not_to change(User, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
