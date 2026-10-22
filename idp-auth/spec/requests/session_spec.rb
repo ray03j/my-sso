@@ -49,6 +49,41 @@ RSpec.describe 'Session', type: :request do
         expect(session[:user_id]).to be_nil
       end
     end
+
+    context '認証情報が欠落・空白の場合' do
+      before do
+        stub_request(:post, Auth::SessionService.idp_user_verify_url)
+          .to_return(
+            status: 401,
+            body: { code: 'INVALID_CREDENTIALS' }.to_json,
+            headers: { 'Content-Type' => 'application/json' }
+          )
+      end
+
+      it 'password が欠落していても 401 を返す' do
+        post '/api/v1/auth/session', params: { email: 'test@example.com' }
+        expect(response).to have_http_status(:unauthorized)
+        expect(session[:user_id]).to be_nil
+      end
+
+      it 'email が欠落していても 401 を返す' do
+        post '/api/v1/auth/session', params: { password: 'password123' }
+        expect(response).to have_http_status(:unauthorized)
+        expect(session[:user_id]).to be_nil
+      end
+
+      it 'email と password が空白でも 401 を返す' do
+        post '/api/v1/auth/session', params: { email: '   ', password: '   ' }
+        expect(response).to have_http_status(:unauthorized)
+        expect(session[:user_id]).to be_nil
+      end
+
+      it 'リクエストボディが空でも 401 を返す' do
+        post '/api/v1/auth/session'
+        expect(response).to have_http_status(:unauthorized)
+        expect(session[:user_id]).to be_nil
+      end
+    end
   end
 
   describe 'DELETE /api/v1/auth/session' do

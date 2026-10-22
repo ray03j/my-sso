@@ -36,7 +36,7 @@ class Client < ApplicationRecord
   end
 
   def allowed_scopes
-    (super || '').split.map(&:strip).compact_blank
+    (super || '').split.map(&:strip).compact_blank.uniq
   end
 
   def allowed_scopes=(scopes)
@@ -48,7 +48,8 @@ class Client < ApplicationRecord
   def redirect_uris_must_be_valid_urls
     redirect_uris.each do |uri|
       parsed = URI.parse(uri)
-      errors.add(:redirect_uris, "#{uri} is not a valid URL") unless parsed.is_a?(URI::HTTP) || parsed.is_a?(URI::HTTPS)
+      valid = (parsed.is_a?(URI::HTTP) || parsed.is_a?(URI::HTTPS)) && parsed.host.present?
+      errors.add(:redirect_uris, "#{uri} is not a valid URL") unless valid
     rescue URI::InvalidURIError
       errors.add(:redirect_uris, "#{uri} is not a valid URL")
     end

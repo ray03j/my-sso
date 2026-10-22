@@ -1,4 +1,6 @@
 class Consent < ApplicationRecord
+  before_validation :normalize_scope
+
   validates :user_id, presence: true, uniqueness: { scope: :client_id }
   validates :client_id, presence: true
   validates :scope, presence: true
@@ -16,5 +18,15 @@ class Consent < ApplicationRecord
       consent.scope = scope
       consent.save!
     end
+  end
+
+  def self.normalize_scope(scope)
+    scope.to_s.split.map(&:strip).compact_blank.join(' ')
+  end
+
+  private
+
+  def normalize_scope
+    self.scope = Consent.normalize_scope(scope)
   end
 end
