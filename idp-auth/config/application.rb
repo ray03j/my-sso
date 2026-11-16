@@ -3,7 +3,7 @@ require 'rails/all'
 
 module IdpAuth
   class Application < Rails::Application
-    config.load_defaults 7.2
+    config.load_defaults 8.0
     config.api_only = false
     config.time_zone = 'Tokyo'
     config.autoload_lib(ignore: %w[assets tasks])
