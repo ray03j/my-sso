@@ -21,6 +21,19 @@ RSpec.describe Auth::AuthorizationCodeService do
       expect(code.code_challenge_method).to eq('S256')
     end
 
+    it 'nonce を認可コードに保存する' do
+      code = described_class.issue(
+        user_id: '550e8400-e29b-41d4-a716-446655440000',
+        client_id: '550e8400-e29b-41d4-a716-446655440001',
+        redirect_uri: 'http://localhost:5174/callback',
+        code_challenge: code_challenge,
+        code_challenge_method: 'S256',
+        nonce: 'n-0S6_WzA2Mj'
+      )
+
+      expect(code.nonce).to eq('n-0S6_WzA2Mj')
+    end
+
     it '必須パラメータが欠落するとエラーになる' do
       expect do
         described_class.issue(

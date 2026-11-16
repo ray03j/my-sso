@@ -72,10 +72,26 @@ RSpec.describe 'Tokens', type: :request do
       expect(payload['at_hash']).to be_present
     end
 
-    it 'nonce を渡すと id_token の nonce クレームに含まれる' do
+    context '/authorize で nonce を受け取っていた場合' do
+      before { authorization_code.update!(nonce: 'n-0S6_WzA2Mj') }
+
+      it '認可コードに保存した nonce を id_token の nonce クレームに含める' do
+        post '/token', params: valid_params
+        payload, = Oidc::JwtSigner.verify(response.parsed_body['id_token'])
+        expect(payload['nonce']).to eq('n-0S6_WzA2Mj')
+      end
+
+      it '/token に渡された nonce では上書きしない' do
+        post '/token', params: valid_params.merge(nonce: 'attacker-nonce')
+        payload, = Oidc::JwtSigner.verify(response.parsed_body['id_token'])
+        expect(payload['nonce']).to eq('n-0S6_WzA2Mj')
+      end
+    end
+
+    it '/authorize で nonce を受け取っていなければ id_token に nonce クレームを含めない' do
       post '/token', params: valid_params.merge(nonce: 'test-nonce')
       payload, = Oidc::JwtSigner.verify(response.parsed_body['id_token'])
-      expect(payload['nonce']).to eq('test-nonce')
+      expect(payload).not_to have_key('nonce')
     end
 
     it 'at_hash が access_token の SHA-256 ハッシュ左半分と一致する' do

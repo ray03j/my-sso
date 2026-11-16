@@ -73,6 +73,11 @@ RSpec.describe 'Authorize', type: :request do
       end.to change(AuthorizationCode, :count).by(1)
     end
 
+    it 'nonce を認可コードに保存する' do
+      get '/authorize', params: valid_params.merge(nonce: 'n-0S6_WzA2Mj')
+      expect(AuthorizationCode.last.nonce).to eq('n-0S6_WzA2Mj')
+    end
+
     it 'スコープの空白違いの再要求では同意済みと判定して認可コードを発行する' do
       get '/authorize', params: valid_params.merge(scope: '  openid   profile  ')
       expect(response).to redirect_to(%r{http://localhost:5174/callback\?code=.+&state=abc123})
