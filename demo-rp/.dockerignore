@@ -1,0 +1,21 @@
+# VCS / Docker
+.git
+.gitignore
+.dockerignore
+Dockerfile
+
+# 秘匿情報（サンプルは残す）
+.env*
+!.env.example
+
+# 依存・ビルド成果物（コンテナ内で再生成する）
+node_modules/
+dist/
+.vite/
+coverage/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
