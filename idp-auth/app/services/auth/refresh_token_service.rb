@@ -4,10 +4,18 @@ module Auth
 
     # リフレッシュトークンを検証・消費し、回転した新しい RefreshToken レコードを返す。
     # 検証失敗時は nil を返し、呼び出し元で invalid_grant に変換する。
+    #
+    # 同一トークンへの同時リクエストで両方が検証を通過しないよう、
+    # 行ロック（SELECT ... FOR UPDATE）を取ったトランザクション内で検証・失効・発行を行う。
+    # 再利用検知の失効を確実にコミットするため、ブロック内では return しない。
     def self.consume(token:, client_id:, scope: nil)
-      record = find_valid_record(token: token, client_id: client_id)
-      return nil if record.nil?
+      RefreshToken.transaction do
+        record = find_valid_record(token: token, client_id: client_id)
+        rotate!(record, scope) if record
+      end
+    end
 
+    def self.rotate!(record, scope)
       new_scope = resolve_scope(record, scope)
       record.revoke!
       RefreshToken.generate_for(
@@ -18,7 +26,7 @@ module Auth
     end
 
     def self.find_valid_record(token:, client_id:)
-      record = RefreshToken.find_by(token: token)
+      record = RefreshToken.lock.find_by(token: token)
       return nil if record.nil? || record.client_id != client_id
 
       if record.revoked?
