@@ -10,9 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 6) do
+ActiveRecord::Schema[8.1].define(version: 7) do
   # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
+  enable_extension "pg_catalog.plpgsql"
 
   create_table "access_tokens", force: :cascade do |t|
     t.string "token", null: false
@@ -38,6 +38,7 @@ ActiveRecord::Schema[7.1].define(version: 6) do
     t.datetime "updated_at", null: false
     t.string "code_challenge"
     t.string "code_challenge_method"
+    t.string "nonce"
     t.index ["client_id", "used"], name: "index_authorization_codes_on_client_id_and_used"
     t.index ["code"], name: "index_authorization_codes_on_code", unique: true
   end
@@ -63,5 +64,4 @@ ActiveRecord::Schema[7.1].define(version: 6) do
     t.index ["token"], name: "index_refresh_tokens_on_token", unique: true
     t.index ["user_id", "client_id"], name: "index_refresh_tokens_on_user_id_and_client_id"
   end
-
 end
