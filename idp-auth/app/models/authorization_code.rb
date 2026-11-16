@@ -15,7 +15,8 @@ class AuthorizationCode < ApplicationRecord
     used
   end
 
-  def self.generate_for(user_id:, client_id:, redirect_uri:, scope: 'openid', code_challenge: nil, code_challenge_method: nil)
+  def self.generate_for(user_id:, client_id:, redirect_uri:, scope: 'openid',
+                        code_challenge: nil, code_challenge_method: nil)
     create!(
       code: SecureRandom.urlsafe_base64(32),
       user_id: user_id,

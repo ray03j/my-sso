@@ -2,7 +2,7 @@ module Auth
   class AuthorizationCodeService
     class InvalidRequestError < StandardError; end
 
-    def self.issue(user_id:, client_id:, redirect_uri:, scope: 'openid', code_challenge:, code_challenge_method:)
+    def self.issue(user_id:, client_id:, redirect_uri:, code_challenge:, code_challenge_method:, scope: 'openid')
       validate_params!(user_id: user_id, client_id: client_id, redirect_uri: redirect_uri)
       validate_pkce!(code_challenge: code_challenge, code_challenge_method: code_challenge_method)
 

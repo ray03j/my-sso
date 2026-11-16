@@ -1,5 +1,9 @@
+inherit_from: .rubocop_enabled_cops.yml
+
 AllCops:
   TargetRubyVersion: 3.3
+  NewCops: disable
+  SuggestExtensions: false
   Exclude:
     - '*/db/schema.rb'
     - '*/vendor/**/*'
@@ -13,3 +17,6 @@ Metrics/BlockLength:
   Exclude:
     - '*/spec/**/*'
     - '*/config/routes.rb'
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
