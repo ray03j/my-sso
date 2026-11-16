@@ -22,6 +22,8 @@ module Oidc
     def self.supported_config
       {
         response_types_supported: ['code'],
+        # 全 RP に同じ User UUID を sub として返すため public のみ（OIDC Core §8）
+        subject_types_supported: ['public'],
         grant_types_supported: GrantTypes::SUPPORTED,
         scopes_supported: Scopes::SUPPORTED,
         token_endpoint_auth_methods_supported: %w[client_secret_post client_secret_basic],
