@@ -202,4 +202,112 @@ RSpec.describe 'Tokens', type: :request do
       expect(response).to have_http_status(:bad_request)
     end
   end
+
+  context 'grant_type=refresh_token の場合' do
+    let!(:refresh_token_record) do
+      RefreshToken.generate_for(
+        user_id: '550e8400-e29b-41d4-a716-446655440000',
+        client_id: client['client_id'],
+        scope: 'openid profile'
+      )
+    end
+
+    let(:refresh_params) do
+      {
+        grant_type: 'refresh_token',
+        refresh_token: refresh_token_record.token,
+        client_id: client['client_id'],
+        client_secret: 'correct_secret'
+      }
+    end
+
+    it '200 OK と新しい access_token / refresh_token を返す' do
+      post '/token', params: refresh_params
+      json = response.parsed_body
+
+      expect(response).to have_http_status(:ok)
+      expect(json).to include('access_token', 'refresh_token', 'token_type', 'expires_in', 'scope')
+      expect(json['token_type']).to eq('Bearer')
+    end
+
+    it 'id_token は返さない' do
+      post '/token', params: refresh_params
+      expect(response.parsed_body).not_to include('id_token')
+    end
+
+    it '旧 refresh_token を失効させ、異なる新しい refresh_token を返す（回転）' do
+      post '/token', params: refresh_params
+      json = response.parsed_body
+
+      expect(refresh_token_record.reload).to be_revoked
+      expect(json['refresh_token']).not_to eq(refresh_token_record.token)
+    end
+
+    it 'scope を渡さなければ元の付与スコープを維持する' do
+      post '/token', params: refresh_params
+      expect(response.parsed_body['scope']).to eq('openid profile')
+    end
+
+    it 'scope を狭めて更新できる' do
+      post '/token', params: refresh_params.merge(scope: 'openid')
+      expect(response.parsed_body['scope']).to eq('openid')
+    end
+
+    it 'scope が元の付与を超える場合は error=invalid_scope を返す' do
+      post '/token', params: refresh_params.merge(scope: 'openid email')
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body['error']).to eq('invalid_scope')
+    end
+
+    it '存在しない refresh_token の場合は error=invalid_grant を返す' do
+      post '/token', params: refresh_params.merge(refresh_token: 'unknown')
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body['error']).to eq('invalid_grant')
+    end
+
+    it 'client_id が一致しない場合は error=invalid_grant を返す' do
+      post '/token', params: refresh_params.merge(client_id: '550e8400-e29b-41d4-a716-446655440099')
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body['error']).to eq('invalid_grant')
+    end
+
+    it '期限切れの refresh_token の場合は error=invalid_grant を返す' do
+      refresh_token_record.update!(expires_at: 1.second.ago)
+      post '/token', params: refresh_params
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body['error']).to eq('invalid_grant')
+    end
+
+    it '回転後の旧トークン再提示は再利用検知で拒否され、新トークンも失効する' do
+      post '/token', params: refresh_params
+      new_token = response.parsed_body['refresh_token']
+
+      post '/token', params: refresh_params
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body['error']).to eq('invalid_grant')
+      expect(RefreshToken.find_by(token: new_token)).to be_revoked
+    end
+
+    it '無効な client_secret の場合は error=invalid_client（401）を返す' do
+      allow(HTTParty).to receive(:post).and_return(
+        double(success?: false, parsed_response: { 'valid' => false })
+      )
+      post '/token', params: refresh_params
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['error']).to eq('invalid_client')
+    end
+
+    it 'refresh_token が欠落している場合は error=invalid_request を返す' do
+      post '/token', params: refresh_params.except(:refresh_token)
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body['error']).to eq('invalid_request')
+    end
+  end
 end
