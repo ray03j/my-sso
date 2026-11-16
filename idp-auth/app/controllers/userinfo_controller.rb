@@ -6,10 +6,12 @@ class UserinfoController < ApplicationController
     return render_token_error if token.blank?
 
     payload = Auth::TokenService.verify_access_token(token)
+    return render_insufficient_scope unless openid_scope?(payload)
+
     user = fetch_user(payload['sub'])
     return render_token_error if user.nil?
 
-    render json: { sub: payload['sub'], email: user['email'], name: user['name'] }
+    render json: { sub: payload['sub'], **user.slice(*Oidc::Scopes.claims_for(payload['scope'])) }
   rescue Auth::TokenService::InvalidTokenError
     render_token_error
   end
@@ -21,6 +23,16 @@ class UserinfoController < ApplicationController
     return nil unless auth&.start_with?('Bearer ')
 
     auth.sub('Bearer ', '')
+  end
+
+  # UserInfo は openid スコープを含む OIDC の access_token でのみ使える（OIDC Core §5.3）
+  def openid_scope?(payload)
+    Oidc::Scopes.parse(payload['scope']).include?(Oidc::Scopes::OPENID)
+  end
+
+  def render_insufficient_scope
+    response.headers['WWW-Authenticate'] = 'Bearer error="insufficient_scope", scope="openid"'
+    render json: { error: 'insufficient_scope' }, status: :forbidden
   end
 
   def fetch_user(user_id)
