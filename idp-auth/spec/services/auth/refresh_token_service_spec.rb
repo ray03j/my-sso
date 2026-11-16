@@ -52,6 +52,13 @@ RSpec.describe Auth::RefreshTokenService do
       expect(described_class.consume(token: record.token, client_id: client_id)).to be_nil
     end
 
+    it '同時リクエスト対策として行ロックを取ったトランザクション内で検証する' do
+      expect(RefreshToken).to receive(:transaction).and_call_original
+      expect(RefreshToken).to receive(:lock).and_call_original
+
+      described_class.consume(token: record.token, client_id: client_id)
+    end
+
     it '失効済みトークンの再提示では族ごと失効させる（再利用検知）' do
       new_record = described_class.consume(token: record.token, client_id: client_id)
 
