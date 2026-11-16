@@ -37,12 +37,22 @@ RSpec.describe 'Userinfo', type: :request do
         get '/userinfo'
         expect(response.parsed_body['error']).to eq('invalid_token')
       end
+
+      it 'error 属性なしの WWW-Authenticate: Bearer を返す' do
+        get '/userinfo'
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer')
+      end
     end
 
     context '無効な Bearer トークンの場合' do
       it '401 Unauthorized を返す' do
         get '/userinfo', headers: { 'Authorization' => 'Bearer invalid.token.value' }
         expect(response).to have_http_status(:unauthorized)
+      end
+
+      it 'WWW-Authenticate: Bearer error="invalid_token" を返す' do
+        get '/userinfo', headers: { 'Authorization' => 'Bearer invalid.token.value' }
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer error="invalid_token"')
       end
     end
 
@@ -62,6 +72,11 @@ RSpec.describe 'Userinfo', type: :request do
       it 'error=invalid_token を返す' do
         get '/userinfo', headers: { 'Authorization' => "Bearer #{expired_token}" }
         expect(response.parsed_body['error']).to eq('invalid_token')
+      end
+
+      it 'WWW-Authenticate: Bearer error="invalid_token" を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{expired_token}" }
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer error="invalid_token"')
       end
     end
 
@@ -90,6 +105,11 @@ RSpec.describe 'Userinfo', type: :request do
         get '/userinfo', headers: { 'Authorization' => "Basic #{access_token}" }
         expect(response).to have_http_status(:unauthorized)
         expect(response.parsed_body['error']).to eq('invalid_token')
+      end
+
+      it 'Bearer トークンがないものとして WWW-Authenticate: Bearer を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Basic #{access_token}" }
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer')
       end
     end
 
