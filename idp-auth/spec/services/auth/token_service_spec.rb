@@ -46,6 +46,27 @@ RSpec.describe Auth::TokenService do
     end
   end
 
+  describe '.issue_id_token' do
+    let(:user_id) { '550e8400-e29b-41d4-a716-446655440000' }
+    let(:client_id) { '550e8400-e29b-41d4-a716-446655440001' }
+
+    def decode(token)
+      Oidc::JwtSigner.verify(token).first
+    end
+
+    it 'auth_time を UNIX 時刻で含める' do
+      token = described_class.issue_id_token(
+        user_id: user_id, client_id: client_id, auth_time: Time.zone.at(1_700_000_000)
+      )
+      expect(decode(token)['auth_time']).to eq(1_700_000_000)
+    end
+
+    it 'auth_time がなければクレームを含めない' do
+      token = described_class.issue_id_token(user_id: user_id, client_id: client_id)
+      expect(decode(token)).not_to have_key('auth_time')
+    end
+  end
+
   describe '.verify_access_token' do
     it '改竄されたJWTを拒否する' do
       token = described_class.issue_access_token(
