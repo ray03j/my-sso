@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 7) do
+ActiveRecord::Schema[8.1].define(version: 8) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -39,6 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 7) do
     t.string "code_challenge"
     t.string "code_challenge_method"
     t.string "nonce"
+    t.datetime "auth_time"
     t.index ["client_id", "used"], name: "index_authorization_codes_on_client_id_and_used"
     t.index ["code"], name: "index_authorization_codes_on_code", unique: true
   end
