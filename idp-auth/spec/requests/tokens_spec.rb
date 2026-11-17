@@ -326,4 +326,42 @@ RSpec.describe 'Tokens', type: :request do
       expect(response.parsed_body['error']).to eq('invalid_request')
     end
   end
+
+  describe 'キャッシュ制御ヘッダ' do
+    shared_examples 'キャッシュを禁止する' do
+      it 'Cache-Control: no-store と Pragma: no-cache を返す' do
+        expect(response.headers['Cache-Control']).to eq('no-store')
+        expect(response.headers['Pragma']).to eq('no-cache')
+      end
+    end
+
+    context 'authorization_code grant が成功した場合' do
+      before { post '/token', params: valid_params }
+
+      it_behaves_like 'キャッシュを禁止する'
+    end
+
+    context 'refresh_token grant が成功した場合' do
+      before do
+        refresh_token = RefreshToken.generate_for(
+          user_id: '550e8400-e29b-41d4-a716-446655440000',
+          client_id: client['client_id']
+        )
+        post '/token', params: {
+          grant_type: 'refresh_token',
+          refresh_token: refresh_token.token,
+          client_id: client['client_id'],
+          client_secret: 'correct_secret'
+        }
+      end
+
+      it_behaves_like 'キャッシュを禁止する'
+    end
+
+    context 'エラーを返す場合' do
+      before { post '/token', params: valid_params.except(:code) }
+
+      it_behaves_like 'キャッシュを禁止する'
+    end
+  end
 end

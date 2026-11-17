@@ -4,6 +4,9 @@ class TokensController < ApplicationController
     'refresh_token' => %w[grant_type refresh_token client_id client_secret]
   }.freeze
 
+  # トークンを含むレスポンスをキャッシュさせない（OIDC Core §3.1.3.3）
+  include NoStoreResponse
+
   def create
     return unless validate_required_params! && validate_grant_type!
 
