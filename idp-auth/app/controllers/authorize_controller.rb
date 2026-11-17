@@ -1,6 +1,11 @@
 class AuthorizeController < ApplicationController
   class AuthorizeError < StandardError; end
 
+  # POST の認可リクエストは RP から自動送信されるフォームで届き、CSRF トークンを持たない（OIDC Core §3.1.2.1）。
+  # null_session のままだと authorize パラメータを保存できず、ログイン後に認可へ戻れなくなる。
+  # 副作用は GET と同じ（登録済み redirect_uri への認可コード発行のみ）で、state と PKCE で保護しているため検証を外す
+  skip_forgery_protection only: :show
+
   REQUIRED_PARAMS = %w[
     client_id redirect_uri response_type scope state
     code_challenge code_challenge_method
