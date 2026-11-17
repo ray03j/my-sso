@@ -12,6 +12,9 @@ Rails.application.configure do
   # Rake tasks automatically ignore this option for performance.
   config.eager_load = true
 
+  # JWT の署名鍵（JWT_PRIVATE_KEY）が未設定・不正なら、最初のトークン発行時ではなく起動時に失敗させる
+  config.after_initialize { Oidc::JwtSigner.jwks }
+
   # Full error reports are disabled and caching is turned on.
   config.consider_all_requests_local = false
 
