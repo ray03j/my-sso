@@ -69,8 +69,9 @@ RSpec.describe 'Authorize', type: :request do
 
     it '認可コードを発行する' do
       expect do
-        get '/authorize', params: valid_params
+        get '/authorize', params: valid_params.merge(nonce: 'n-0S6_WzA2Mj')
       end.to change(AuthorizationCode, :count).by(1)
+      expect(AuthorizationCode.last.nonce).to eq('n-0S6_WzA2Mj')
     end
 
     it 'スコープの空白違いの再要求では同意済みと判定して認可コードを発行する' do

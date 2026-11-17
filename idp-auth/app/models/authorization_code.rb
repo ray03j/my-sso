@@ -16,15 +16,12 @@ class AuthorizationCode < ApplicationRecord
   end
 
   def self.generate_for(user_id:, client_id:, redirect_uri:, scope: 'openid',
-                        code_challenge: nil, code_challenge_method: nil)
+                        code_challenge: nil, code_challenge_method: nil, nonce: nil)
     create!(
       code: SecureRandom.urlsafe_base64(32),
-      user_id: user_id,
-      client_id: client_id,
-      redirect_uri: redirect_uri,
-      scope: scope,
-      code_challenge: code_challenge,
-      code_challenge_method: code_challenge_method,
+      user_id: user_id, client_id: client_id, redirect_uri: redirect_uri, scope: scope,
+      code_challenge: code_challenge, code_challenge_method: code_challenge_method,
+      nonce: nonce,
       expires_at: EXPIRES_IN.seconds.from_now
     )
   end

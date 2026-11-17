@@ -2,17 +2,16 @@ module Auth
   class AuthorizationCodeService
     class InvalidRequestError < StandardError; end
 
-    def self.issue(user_id:, client_id:, redirect_uri:, code_challenge:, code_challenge_method:, scope: 'openid')
+    # nonce は /authorize で受けた値を ID Token にそのまま入れるため認可コードに保存する（OIDC Core §2）
+    def self.issue(user_id:, client_id:, redirect_uri:, code_challenge:, code_challenge_method:,
+                   scope: 'openid', nonce: nil)
       validate_params!(user_id: user_id, client_id: client_id, redirect_uri: redirect_uri)
       validate_pkce!(code_challenge: code_challenge, code_challenge_method: code_challenge_method)
 
       AuthorizationCode.generate_for(
-        user_id: user_id,
-        client_id: client_id,
-        redirect_uri: redirect_uri,
-        scope: scope,
-        code_challenge: code_challenge,
-        code_challenge_method: code_challenge_method
+        user_id: user_id, client_id: client_id, redirect_uri: redirect_uri, scope: scope,
+        code_challenge: code_challenge, code_challenge_method: code_challenge_method,
+        nonce: nonce
       )
     end
 

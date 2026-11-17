@@ -60,7 +60,8 @@ class AuthorizeController < ApplicationController
       redirect_uri: params[:redirect_uri],
       scope: params[:scope],
       code_challenge: params[:code_challenge],
-      code_challenge_method: params[:code_challenge_method]
+      code_challenge_method: params[:code_challenge_method],
+      nonce: params[:nonce]
     ).code
   end
 
