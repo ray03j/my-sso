@@ -29,6 +29,16 @@ RSpec.describe Oidc::Scopes do
     end
   end
 
+  describe '.claims_for' do
+    it 'openid のみの場合はクレームを返さない' do
+      expect(described_class.claims_for('openid')).to be_empty
+    end
+
+    it 'profile は name、email は email に対応する' do
+      expect(described_class.claims_for('openid profile email')).to contain_exactly('name', 'email')
+    end
+  end
+
   describe '.join' do
     it '配列をスペース区切り文字列に変換する' do
       expect(described_class.join(%w[openid profile])).to eq('openid profile')

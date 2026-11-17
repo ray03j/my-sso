@@ -19,11 +19,52 @@ RSpec.describe 'Userinfo', type: :request do
         expect(response).to have_http_status(:ok)
       end
 
-      it 'sub / email / name を返す' do
+      it 'openid のみのスコープでは sub だけを返す' do
         get '/userinfo', headers: { 'Authorization' => "Bearer #{access_token}" }
-        json = response.parsed_body
-        expect(json).to include('sub', 'email', 'name')
-        expect(json['sub']).to eq(user_id)
+        expect(response.parsed_body).to eq('sub' => user_id)
+      end
+    end
+
+    context 'スコープに応じたクレームの場合' do
+      def userinfo_with(scope)
+        token = Auth::TokenService.issue_access_token(user_id: user_id, client_id: client_id, scope: scope)
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{token}" }
+        response.parsed_body
+      end
+
+      it 'profile を含むと name を返す' do
+        expect(userinfo_with('openid profile')).to eq('sub' => user_id, 'name' => 'Test User')
+      end
+
+      it 'email を含むと email を返す' do
+        expect(userinfo_with('openid email')).to eq('sub' => user_id, 'email' => 'test@example.com')
+      end
+
+      it 'profile と email を含むと name と email を返す' do
+        expect(userinfo_with('openid profile email'))
+          .to eq('sub' => user_id, 'name' => 'Test User', 'email' => 'test@example.com')
+      end
+    end
+
+    context 'openid スコープを含まないトークンの場合' do
+      let(:non_oidc_token) do
+        Auth::TokenService.issue_access_token(user_id: user_id, client_id: client_id, scope: 'profile email')
+      end
+
+      it '403 Forbidden と error=insufficient_scope を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{non_oidc_token}" }
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['error']).to eq('insufficient_scope')
+      end
+
+      it 'WWW-Authenticate に insufficient_scope を返す' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{non_oidc_token}" }
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer error="insufficient_scope", scope="openid"')
+      end
+
+      it 'idp-user にユーザー情報を問い合わせない' do
+        get '/userinfo', headers: { 'Authorization' => "Bearer #{non_oidc_token}" }
+        expect(HTTParty).not_to have_received(:get)
       end
     end
 
