@@ -12,5 +12,19 @@ RSpec.describe Oidc::Discovery do
       expect(metadata[:scopes_supported]).to include('openid', 'profile', 'email')
       expect(metadata[:grant_types_supported]).to include('authorization_code', 'refresh_token')
     end
+
+    it 'OIDC Discovery 1.0 §3 の必須フィールドをすべて含む' do
+      required = %i[
+        issuer authorization_endpoint token_endpoint jwks_uri
+        response_types_supported subject_types_supported id_token_signing_alg_values_supported
+      ]
+      metadata = described_class.metadata
+
+      expect(required.select { |key| metadata[key].blank? }).to be_empty
+    end
+
+    it 'subject_types_supported は public のみ' do
+      expect(described_class.metadata[:subject_types_supported]).to eq(['public'])
+    end
   end
 end
