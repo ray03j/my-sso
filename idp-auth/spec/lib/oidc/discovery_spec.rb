@@ -26,5 +26,9 @@ RSpec.describe Oidc::Discovery do
     it 'subject_types_supported は public のみ' do
       expect(described_class.metadata[:subject_types_supported]).to eq(['public'])
     end
+
+    it 'id_token_signing_alg_values_supported は RS256 のみ' do
+      expect(described_class.metadata[:id_token_signing_alg_values_supported]).to eq(['RS256'])
+    end
   end
 end
