@@ -22,6 +22,11 @@ RSpec.describe 'Session', type: :request do
         expect(session[:user_id]).to eq(1)
       end
 
+      it 'セッションに認証時刻を保存する' do
+        post '/api/v1/auth/session', params: { email: 'test@example.com', password: 'password123' }
+        expect(session[:auth_time]).to be_within(5).of(Time.current.to_i)
+      end
+
       it 'ユーザー情報を返す' do
         post '/api/v1/auth/session', params: { email: 'test@example.com', password: 'password123' }
         json = response.parsed_body
@@ -47,6 +52,11 @@ RSpec.describe 'Session', type: :request do
       it 'セッションにユーザーIDを保存しない' do
         post '/api/v1/auth/session', params: { email: 'test@example.com', password: 'wrongpassword' }
         expect(session[:user_id]).to be_nil
+      end
+
+      it 'セッションに認証時刻を保存しない' do
+        post '/api/v1/auth/session', params: { email: 'test@example.com', password: 'wrong' }
+        expect(session[:auth_time]).to be_nil
       end
     end
 
