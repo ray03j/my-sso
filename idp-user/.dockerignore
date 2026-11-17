@@ -1,0 +1,26 @@
+# VCS / Docker
+.git
+.gitignore
+.dockerignore
+Dockerfile
+
+# 秘匿情報
+.env*
+config/master.key
+config/credentials/*.key
+
+# 実行時に生成されるファイル
+log/*
+tmp/*
+storage/*
+coverage/
+
+# ホスト側でインストールした依存
+.bundle/
+vendor/bundle/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
