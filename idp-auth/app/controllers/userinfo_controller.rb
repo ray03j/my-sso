@@ -3,7 +3,7 @@ require 'httparty'
 class UserinfoController < ApplicationController
   def show
     token = bearer_token
-    return render_token_error if token.blank?
+    return render_missing_token if token.blank?
 
     payload = Auth::TokenService.verify_access_token(token)
     return render_insufficient_scope unless openid_scope?(payload)
@@ -46,7 +46,15 @@ class UserinfoController < ApplicationController
     nil
   end
 
+  # エラーは RFC 6750 §3 に従い WWW-Authenticate ヘッダで返す（OIDC Core §5.3.3）。
+  # 認証情報がない場合は error 属性を付けない（RFC 6750 §3.1）
+  def render_missing_token
+    response.headers['WWW-Authenticate'] = 'Bearer'
+    render json: { error: 'invalid_token' }, status: :unauthorized
+  end
+
   def render_token_error
+    response.headers['WWW-Authenticate'] = 'Bearer error="invalid_token"'
     render json: { error: 'invalid_token' }, status: :unauthorized
   end
 
