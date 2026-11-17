@@ -159,4 +159,55 @@ RSpec.describe 'Authorize', type: :request do
       end.not_to change(AuthorizationCode, :count)
     end
   end
+
+  describe 'POST /authorize' do
+    context '未ログインの場合' do
+      it 'ログイン画面へリダイレクトする' do
+        post '/authorize', params: valid_params
+        expect(response).to redirect_to('/login')
+      end
+
+      it 'CSRF トークンがなくても、フォームで送られたパラメータを次のリクエストまでセッションに保持する' do
+        post '/authorize', params: valid_params
+        get '/.well-known/openid-configuration'
+        expect(session[:authorize_params]).to include(valid_params.stringify_keys)
+      end
+    end
+
+    context 'ログイン済み・同意済みの場合' do
+      before do
+        sign_in(user_id: user_id)
+        Consent.create!(user_id: user_id, client_id: client['client_id'], scope: 'openid profile')
+      end
+
+      it '認可コードを付与して redirect_uri へリダイレクトする' do
+        post '/authorize', params: valid_params
+        expect(response).to redirect_to(%r{http://localhost:5174/callback\?code=.+&state=abc123})
+      end
+
+      it 'フォームで送られた nonce を認可コードに保存する' do
+        post '/authorize', params: valid_params.merge(nonce: 'n-0S6_WzA2Mj')
+        expect(AuthorizationCode.last.nonce).to eq('n-0S6_WzA2Mj')
+      end
+    end
+
+    context '必須パラメータが欠落している場合' do
+      it 'error=invalid_request を返す' do
+        post '/authorize', params: valid_params.except(:state)
+        expect(response).to redirect_to('http://localhost:5174/callback?error=invalid_request')
+      end
+    end
+
+    context '無効な client_id の場合' do
+      before do
+        allow(HTTParty).to receive(:get).and_return(double(success?: false, parsed_response: {}))
+      end
+
+      it '400 Bad Request を返す' do
+        post '/authorize', params: valid_params
+        expect(response).to have_http_status(:bad_request)
+        expect(response.body).to eq('invalid_client')
+      end
+    end
+  end
 end
