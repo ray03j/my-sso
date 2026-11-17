@@ -1,6 +1,8 @@
 class AuthorizeController < ApplicationController
   class AuthorizeError < StandardError; end
 
+  include AuthorizePrompt
+
   REQUIRED_PARAMS = %w[
     client_id redirect_uri response_type scope state
     code_challenge code_challenge_method
@@ -11,8 +13,8 @@ class AuthorizeController < ApplicationController
     return render plain: 'invalid_client', status: :bad_request if client.nil?
 
     validate_authorize_request!
-    return continue_at(login_url) unless authenticated?
-    return continue_at(consent_url) unless consent_recorded?(client)
+    return require_login if reauthentication_required?
+    return require_consent unless consent_recorded?(client)
 
     redirect_to redirect_uri_with_code(issue_authorization_code(client)), allow_other_host: true
   rescue AuthorizeError => e
@@ -33,6 +35,8 @@ class AuthorizeController < ApplicationController
     validate_required_params!
     validate_response_type!
     validate_code_challenge_method!
+    validate_prompt!
+    validate_max_age!
   end
 
   def continue_at(url)
@@ -61,7 +65,8 @@ class AuthorizeController < ApplicationController
       scope: params[:scope],
       code_challenge: params[:code_challenge],
       code_challenge_method: params[:code_challenge_method],
-      nonce: params[:nonce]
+      nonce: params[:nonce],
+      auth_time: current_auth_time
     ).code
   end
 
@@ -73,11 +78,15 @@ class AuthorizeController < ApplicationController
     )
   end
 
+  # ログイン後に同じリクエストで認可へ戻るときに再びログインを求めないよう、prompt から login を外して保存する
   def store_authorize_params!
-    session[:authorize_params] = params.permit(
+    stored = params.permit(
       :client_id, :redirect_uri, :response_type, :scope, :state,
-      :code_challenge, :code_challenge_method, :nonce
+      :code_challenge, :code_challenge_method, :nonce, :prompt, :max_age
     ).to_h
+    remaining_prompt = (prompts - [PROMPT_LOGIN]).join(' ')
+    remaining_prompt.empty? ? stored.delete('prompt') : stored['prompt'] = remaining_prompt
+    session[:authorize_params] = stored
   end
 
   def redirect_uri_with_code(code)
