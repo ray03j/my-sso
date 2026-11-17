@@ -30,7 +30,7 @@ RSpec.describe Oidc::Scopes do
   end
 
   describe '.claims_for' do
-    it 'openid のみの場合はクレームを返さない' do
+    it 'openid はクレームに対応しないため空を返す' do
       expect(described_class.claims_for('openid')).to be_empty
     end
 
