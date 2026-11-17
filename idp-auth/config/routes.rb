@@ -11,5 +11,6 @@ Rails.application.routes.draw do
   get '/authorize', to: 'authorize#show'
   post '/token', to: 'tokens#create'
   get '/.well-known/openid-configuration', to: 'discovery#show'
+  get '/jwks.json', to: 'jwks#show'
   get '/userinfo', to: 'userinfo#show'
 end
