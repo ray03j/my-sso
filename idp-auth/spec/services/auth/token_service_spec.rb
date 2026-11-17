@@ -67,11 +67,11 @@ RSpec.describe Auth::TokenService do
       end.to raise_error(Auth::TokenService::InvalidTokenError)
     end
 
-    it '異なるシークレットで署名されたJWTを拒否する' do
+    it '同じ kid で別の秘密鍵により署名されたJWTを拒否する' do
       forged = JWT.encode(
         { sub: '550e8400-e29b-41d4-a716-446655440000', client_id: 'c1', scope: 'openid',
           exp: 1.hour.from_now.to_i },
-        'wrong-secret', 'HS256'
+        OpenSSL::PKey::RSA.generate(2048), 'RS256', { kid: Oidc::JwtSigner.jwks.first[:kid] }
       )
       expect do
         described_class.verify_access_token(forged)

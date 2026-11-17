@@ -121,12 +121,12 @@ RSpec.describe 'Userinfo', type: :request do
       end
     end
 
-    context '異なるシークレットで署名されたトークンの場合' do
+    context '同じ kid で別の秘密鍵により署名されたトークンの場合' do
       let(:forged_token) do
         JWT.encode(
           { sub: user_id, client_id: client_id, scope: 'openid',
             iat: Time.current.to_i, exp: 1.hour.from_now.to_i },
-          'wrong-secret', 'HS256'
+          OpenSSL::PKey::RSA.generate(2048), 'RS256', { kid: Oidc::JwtSigner.jwks.first[:kid] }
         )
       end
 
