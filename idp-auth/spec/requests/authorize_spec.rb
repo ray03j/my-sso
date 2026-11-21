@@ -210,4 +210,103 @@ RSpec.describe 'Authorize', type: :request do
       end
     end
   end
+
+  describe 'prompt / max_age（OIDC Core §3.1.2.1）' do
+    let(:callback) { 'http://localhost:5174/callback' }
+
+    def record_consent
+      Consent.create!(user_id: user_id, client_id: client['client_id'], scope: 'openid profile')
+    end
+
+    context 'prompt=none の場合' do
+      it '未ログインなら画面を出さず error=login_required を返す' do
+        get '/authorize', params: valid_params.merge(prompt: 'none')
+        expect(response).to redirect_to("#{callback}?error=login_required&state=abc123")
+      end
+
+      it 'ログイン済み・未同意なら画面を出さず error=consent_required を返す' do
+        sign_in(user_id: user_id)
+        get '/authorize', params: valid_params.merge(prompt: 'none')
+        expect(response).to redirect_to("#{callback}?error=consent_required&state=abc123")
+      end
+
+      it 'ログイン済み・同意済みなら認可コードを返す' do
+        sign_in(user_id: user_id)
+        record_consent
+        get '/authorize', params: valid_params.merge(prompt: 'none')
+        expect(response).to redirect_to(%r{\Ahttp://localhost:5174/callback\?code=.+&state=abc123\z})
+      end
+
+      it 'max_age を超えていれば error=login_required を返す' do
+        sign_in(user_id: user_id, auth_time: 2.hours.ago.to_i)
+        record_consent
+        get '/authorize', params: valid_params.merge(prompt: 'none', max_age: 3600)
+        expect(response).to redirect_to("#{callback}?error=login_required&state=abc123")
+      end
+
+      it '他の値と同時に指定されたら error=invalid_request を返す' do
+        get '/authorize', params: valid_params.merge(prompt: 'none login')
+        expect(response).to redirect_to("#{callback}?error=invalid_request&state=abc123")
+      end
+    end
+
+    context 'prompt=login の場合' do
+      before do
+        sign_in(user_id: user_id)
+        record_consent
+      end
+
+      it 'ログイン済み・同意済みでもログイン画面へリダイレクトする' do
+        get '/authorize', params: valid_params.merge(prompt: 'login')
+        expect(response).to redirect_to('/login')
+      end
+
+      it 'ログイン後に再びログインを求めないよう、保存するパラメータから prompt を外す' do
+        get '/authorize', params: valid_params.merge(prompt: 'login')
+        expect(session[:authorize_params]).not_to have_key('prompt')
+      end
+
+      it 'login 以外の prompt の値は保存する' do
+        get '/authorize', params: valid_params.merge(prompt: 'login consent')
+        expect(session[:authorize_params]['prompt']).to eq('consent')
+      end
+    end
+
+    context 'max_age を指定した場合' do
+      before { record_consent }
+
+      it '認証からの経過時間が max_age 以内なら認可コードを返す' do
+        sign_in(user_id: user_id, auth_time: 10.minutes.ago.to_i)
+        get '/authorize', params: valid_params.merge(max_age: 3600)
+        expect(response).to redirect_to(%r{\Ahttp://localhost:5174/callback\?code=.+})
+      end
+
+      it '認証からの経過時間が max_age を超えていればログイン画面へリダイレクトする' do
+        sign_in(user_id: user_id, auth_time: 2.hours.ago.to_i)
+        get '/authorize', params: valid_params.merge(max_age: 3600)
+        expect(response).to redirect_to('/login')
+      end
+
+      it '認証時刻が分からないセッションならログイン画面へリダイレクトする' do
+        sign_in(user_id: user_id, auth_time: nil)
+        get '/authorize', params: valid_params.merge(max_age: 3600)
+        expect(response).to redirect_to('/login')
+      end
+
+      it '0 以上の整数でなければ error=invalid_request を返す' do
+        sign_in(user_id: user_id)
+        get '/authorize', params: valid_params.merge(max_age: '-1')
+        expect(response).to redirect_to("#{callback}?error=invalid_request&state=abc123")
+      end
+    end
+
+    context '認可コードを発行する場合' do
+      it 'セッションの認証時刻を認可コードに保存する' do
+        sign_in(user_id: user_id, auth_time: 1_700_000_000)
+        record_consent
+        get '/authorize', params: valid_params
+        expect(AuthorizationCode.last.auth_time.to_i).to eq(1_700_000_000)
+      end
+    end
+  end
 end

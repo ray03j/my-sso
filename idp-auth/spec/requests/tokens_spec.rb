@@ -94,6 +94,13 @@ RSpec.describe 'Tokens', type: :request do
       expect(payload).not_to have_key('nonce')
     end
 
+    it '認可コードに保存した auth_time を id_token の auth_time クレームに含める' do
+      authorization_code.update!(auth_time: Time.zone.at(1_700_000_000))
+      post '/token', params: valid_params
+      payload, = Oidc::JwtSigner.verify(response.parsed_body['id_token'])
+      expect(payload['auth_time']).to eq(1_700_000_000)
+    end
+
     it 'at_hash が access_token の SHA-256 ハッシュ左半分と一致する' do
       post '/token', params: valid_params
       json = response.parsed_body

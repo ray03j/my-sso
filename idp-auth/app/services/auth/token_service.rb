@@ -11,18 +11,26 @@ module Auth
       token
     end
 
-    def self.issue_id_token(user_id:, client_id:, nonce: nil, access_token: nil)
-      payload = {
+    # auth_time はユーザーが認証した時刻（UNIX 時刻）。max_age の要求時は必須で、§15.1 で OP は対応しなければならない
+    def self.issue_id_token(user_id:, client_id:, nonce: nil, access_token: nil, auth_time: nil)
+      payload = id_token_required_claims(user_id: user_id, client_id: client_id).merge(
+        auth_time: auth_time&.to_i,
+        nonce: nonce,
+        at_hash: at_hash(access_token)
+      ).compact
+
+      Oidc::JwtSigner.sign(payload)
+    end
+
+    # ID Token の必須クレーム（OIDC Core §2）
+    def self.id_token_required_claims(user_id:, client_id:)
+      {
         iss: Oidc::Discovery::ISSUER,
         sub: user_id,
         aud: client_id,
         exp: ID_TOKEN_EXPIRES_IN.seconds.from_now.to_i,
-        iat: Time.current.to_i,
-        nonce: nonce,
-        at_hash: at_hash(access_token)
-      }.compact
-
-      Oidc::JwtSigner.sign(payload)
+        iat: Time.current.to_i
+      }
     end
 
     def self.verify_access_token(token)
