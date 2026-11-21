@@ -178,4 +178,53 @@ RSpec.describe 'Userinfo', type: :request do
       end
     end
   end
+
+  describe 'POST /userinfo' do
+    context '有効な Bearer トークンの場合' do
+      it '200 OK を返す' do
+        post '/userinfo', headers: { 'Authorization' => "Bearer #{access_token}" }
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'GET と同じくスコープに応じたクレームを返す' do
+        token = Auth::TokenService.issue_access_token(user_id: user_id, client_id: client_id,
+                                                      scope: 'openid profile email')
+        post '/userinfo', headers: { 'Authorization' => "Bearer #{token}" }
+        expect(response.parsed_body).to eq('sub' => user_id, 'name' => 'Test User', 'email' => 'test@example.com')
+      end
+
+      it 'CSRF トークンなしのフォーム送信でも 200 OK を返す' do
+        post '/userinfo', params: {}, headers: {
+          'Authorization' => "Bearer #{access_token}",
+          'Content-Type' => 'application/x-www-form-urlencoded'
+        }
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'Bearer トークンがない場合' do
+      it '401 Unauthorized と WWW-Authenticate: Bearer を返す' do
+        post '/userinfo'
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer')
+      end
+    end
+
+    context '無効な Bearer トークンの場合' do
+      it '401 Unauthorized と WWW-Authenticate: Bearer error="invalid_token" を返す' do
+        post '/userinfo', headers: { 'Authorization' => 'Bearer invalid.token.value' }
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.headers['WWW-Authenticate']).to eq('Bearer error="invalid_token"')
+      end
+    end
+
+    context 'openid スコープを含まないトークンの場合' do
+      it '403 Forbidden と error=insufficient_scope を返す' do
+        token = Auth::TokenService.issue_access_token(user_id: user_id, client_id: client_id, scope: 'profile email')
+        post '/userinfo', headers: { 'Authorization' => "Bearer #{token}" }
+        expect(response).to have_http_status(:forbidden)
+        expect(response.parsed_body['error']).to eq('insufficient_scope')
+      end
+    end
+  end
 end
