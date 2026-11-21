@@ -11,6 +11,7 @@ if Rails.env.development?
       client_secret_hash: BCrypt::Password.create(attrs[:secret]),
       name: attrs[:name],
       redirect_uris: "http://localhost:#{attrs[:port]}/callback\nhttp://localhost:#{attrs[:port]}/",
+      post_logout_redirect_uris: "http://localhost:#{attrs[:port]}/",
       allowed_scopes: 'openid profile email'
     )
     client.save!
