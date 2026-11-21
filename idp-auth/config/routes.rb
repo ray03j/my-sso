@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       namespace :auth do
         resource :session, only: %i[create destroy], controller: 'session'
+        resource :csrf_token, only: %i[show], controller: 'csrf_token'
       end
       resource :consent, only: %i[create], controller: 'consent'
     end
