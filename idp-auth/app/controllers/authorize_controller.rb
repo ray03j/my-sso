@@ -104,11 +104,7 @@ class AuthorizeController < ApplicationController
   end
 
   def build_redirect_uri(redirect_uri, error: nil, code: nil)
-    uri = URI.parse(redirect_uri)
-    query = Rack::Utils.parse_query(uri.query)
-    extras = { 'error' => error, 'code' => code, 'state' => params[:state] }.compact_blank
-    uri.query = Rack::Utils.build_nested_query(query.merge(extras))
-    uri.to_s
+    Auth::RedirectUri.build(redirect_uri, error: error, code: code, state: params[:state])
   end
 
   def login_url
