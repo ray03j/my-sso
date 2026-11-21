@@ -10,6 +10,18 @@ class AccessToken < ApplicationRecord
     expires_at < Time.current
   end
 
+  def revoked?
+    revoked_at.present?
+  end
+
+  def revoke!
+    update!(revoked_at: Time.current) unless revoked?
+  end
+
+  def self.revoked_token?(token)
+    where(token: token).where.not(revoked_at: nil).exists?
+  end
+
   def self.generate_for(user_id:, client_id:, scope: 'openid')
     create!(
       token: SecureRandom.urlsafe_base64(32),
