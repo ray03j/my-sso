@@ -9,6 +9,8 @@ RSpec.describe Oidc::Discovery do
       expect(metadata[:token_endpoint]).to be_present
       expect(metadata[:userinfo_endpoint]).to be_present
       expect(metadata[:jwks_uri]).to be_present
+      expect(metadata[:revocation_endpoint]).to eq("#{Oidc::Discovery::ISSUER}/revoke")
+      expect(metadata[:revocation_endpoint_auth_methods_supported]).to eq(%w[client_secret_post client_secret_basic])
       expect(metadata[:scopes_supported]).to include('openid', 'profile', 'email')
       expect(metadata[:grant_types_supported]).to include('authorization_code', 'refresh_token')
     end

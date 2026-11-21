@@ -68,6 +68,16 @@ RSpec.describe Auth::TokenService do
   end
 
   describe '.verify_access_token' do
+    it '失効させたJWTを拒否すること' do
+      token = described_class.issue_access_token(
+        user_id: '550e8400-e29b-41d4-a716-446655440000', client_id: '550e8400-e29b-41d4-a716-446655440001'
+      )
+      AccessToken.find_by!(token: token).revoke!
+      expect do
+        described_class.verify_access_token(token)
+      end.to raise_error(described_class::InvalidTokenError)
+    end
+
     it '改竄されたJWTを拒否すること' do
       token = described_class.issue_access_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
