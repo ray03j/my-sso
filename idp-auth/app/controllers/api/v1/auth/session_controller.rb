@@ -2,6 +2,8 @@ module Api
   module V1
     module Auth
       class SessionController < ApplicationController
+        include CsrfProtectedApi
+
         def create
           user = ::Auth::SessionService.authenticate(
             params[:email],
