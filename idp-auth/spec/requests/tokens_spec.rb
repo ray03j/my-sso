@@ -334,6 +334,108 @@ RSpec.describe 'Tokens', type: :request do
     end
   end
 
+  describe 'client_secret_basic によるクライアント認証' do
+    let(:basic_header) do
+      { 'Authorization' => "Basic #{Base64.strict_encode64("#{client['client_id']}:correct_secret")}" }
+    end
+    let(:params_without_secret) { valid_params.except(:client_id, :client_secret) }
+
+    context 'Authorization: Basic ヘッダで認証する場合' do
+      it 'authorization_code grant で 200 OK とトークンを返す' do
+        post '/token', params: params_without_secret, headers: basic_header
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).to include('access_token', 'id_token', 'refresh_token')
+      end
+
+      it 'ヘッダの client_id / client_secret で idp-client に問い合わせる' do
+        post '/token', params: params_without_secret, headers: basic_header
+        expect(HTTParty).to have_received(:post).with(
+          Auth::ClientAuthenticationService.verify_url,
+          hash_including(body: include('"client_id":"550e8400-e29b-41d4-a716-446655440001"',
+                                       '"client_secret":"correct_secret"'))
+        )
+      end
+
+      it 'refresh_token grant で 200 OK を返す' do
+        refresh_token = RefreshToken.generate_for(
+          user_id: '550e8400-e29b-41d4-a716-446655440000', client_id: client['client_id']
+        )
+        post '/token', params: { grant_type: 'refresh_token', refresh_token: refresh_token.token },
+                       headers: basic_header
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'ボディにヘッダと同じ client_id があっても受け付ける' do
+        post '/token', params: params_without_secret.merge(client_id: client['client_id']), headers: basic_header
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'Basic ヘッダとボディの client_secret を両方送った場合' do
+      it '400 と error=invalid_request を返す（RFC 6749 §2.3）' do
+        post '/token', params: valid_params, headers: basic_header
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body['error']).to eq('invalid_request')
+      end
+    end
+
+    context 'Basic ヘッダとボディの client_id が異なる場合' do
+      it '400 と error=invalid_request を返す' do
+        post '/token', params: params_without_secret.merge(client_id: '550e8400-e29b-41d4-a716-446655440099'),
+                       headers: basic_header
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body['error']).to eq('invalid_request')
+      end
+    end
+
+    context 'Basic ヘッダの client_secret が誤っている場合' do
+      before do
+        allow(HTTParty).to receive(:post).and_return(double(success?: false, parsed_response: { 'valid' => false }))
+      end
+
+      it '401 と error=invalid_client、WWW-Authenticate: Basic を返す（RFC 6749 §5.2）' do
+        post '/token', params: params_without_secret, headers: basic_header
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body['error']).to eq('invalid_client')
+        expect(response.headers['WWW-Authenticate']).to start_with('Basic realm=')
+      end
+
+      it '認可コードを消費しない' do
+        post '/token', params: params_without_secret, headers: basic_header
+        expect(authorization_code.reload.used?).to be false
+      end
+    end
+
+    context 'Basic ヘッダの値を解釈できない場合' do
+      it '401 と error=invalid_client、WWW-Authenticate: Basic を返す' do
+        post '/token', params: params_without_secret, headers: { 'Authorization' => 'Basic !!!not-base64!!!' }
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.parsed_body['error']).to eq('invalid_client')
+        expect(response.headers['WWW-Authenticate']).to start_with('Basic realm=')
+      end
+    end
+
+    context 'client_secret_post で client_secret が誤っている場合' do
+      before do
+        allow(HTTParty).to receive(:post).and_return(double(success?: false, parsed_response: { 'valid' => false }))
+      end
+
+      it 'WWW-Authenticate を付けない' do
+        post '/token', params: valid_params
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.headers['WWW-Authenticate']).to be_nil
+      end
+    end
+
+    context 'クライアント認証情報がない場合' do
+      it '400 と error=invalid_request を返す' do
+        post '/token', params: params_without_secret
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body['error']).to eq('invalid_request')
+      end
+    end
+  end
+
   describe 'キャッシュ制御ヘッダ' do
     shared_examples 'キャッシュを禁止する' do
       it 'Cache-Control: no-store と Pragma: no-cache を返す' do

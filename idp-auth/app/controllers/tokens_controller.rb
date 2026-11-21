@@ -1,14 +1,16 @@
 class TokensController < ApplicationController
   GRANT_REQUIRED_PARAMS = {
-    'authorization_code' => %w[grant_type code redirect_uri code_verifier client_id client_secret],
-    'refresh_token' => %w[grant_type refresh_token client_id client_secret]
+    'authorization_code' => %w[grant_type code redirect_uri code_verifier],
+    'refresh_token' => %w[grant_type refresh_token]
   }.freeze
 
   # トークンを含むレスポンスをキャッシュさせない（OIDC Core §3.1.3.3）
   include NoStoreResponse
+  # client_secret_basic と client_secret_post のどちらでもクライアント認証情報を受け取る（OIDC Core §9）
+  include TokenClientAuthentication
 
   def create
-    return unless validate_required_params! && validate_grant_type!
+    return unless validate_required_params! && validate_grant_type! && extract_client_credentials!
 
     if refresh_token_grant?
       create_with_refresh_token_grant
@@ -26,15 +28,15 @@ class TokensController < ApplicationController
   # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
   def create_with_authorization_code_grant
     client = Auth::ClientAuthenticationService.call(
-      client_id: params[:client_id],
-      client_secret: params[:client_secret],
+      client_id: @client_credentials.client_id,
+      client_secret: @client_credentials.client_secret,
       redirect_uri: params[:redirect_uri]
     )
-    return render_token_error('invalid_client', :unauthorized) unless client
+    return render_invalid_client(basic: @client_credentials.basic?) unless client
 
     code_record = Auth::AuthorizationCodeService.consume(
       code: params[:code],
-      client_id: params[:client_id],
+      client_id: @client_credentials.client_id,
       redirect_uri: params[:redirect_uri],
       code_verifier: params[:code_verifier]
     )
@@ -71,14 +73,14 @@ class TokensController < ApplicationController
   # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
   def create_with_refresh_token_grant
     client = Auth::ClientAuthenticationService.call(
-      client_id: params[:client_id],
-      client_secret: params[:client_secret]
+      client_id: @client_credentials.client_id,
+      client_secret: @client_credentials.client_secret
     )
-    return render_token_error('invalid_client', :unauthorized) unless client
+    return render_invalid_client(basic: @client_credentials.basic?) unless client
 
     new_refresh_token = Auth::RefreshTokenService.consume(
       token: params[:refresh_token],
-      client_id: params[:client_id],
+      client_id: @client_credentials.client_id,
       scope: params[:scope]
     )
     return render_token_error('invalid_grant', :bad_request) if new_refresh_token.nil?

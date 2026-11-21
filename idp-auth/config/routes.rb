@@ -8,8 +8,12 @@ Rails.application.routes.draw do
     end
   end
 
+  # 認可エンドポイントは GET と POST の両方に対応しなければならない（OIDC Core §3.1.2.1）
   get '/authorize', to: 'authorize#show'
+  post '/authorize', to: 'authorize#show'
   post '/token', to: 'tokens#create'
   get '/.well-known/openid-configuration', to: 'discovery#show'
+  # UserInfo は GET と POST の両方に対応しなければならない（OIDC Core §5.3）
   get '/userinfo', to: 'userinfo#show'
+  post '/userinfo', to: 'userinfo#show'
 end

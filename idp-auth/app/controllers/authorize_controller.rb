@@ -3,6 +3,10 @@ class AuthorizeController < ApplicationController
 
   include AuthorizePrompt
 
+  # OIDC で必須の POST（§3.1.2.1）は RP のフォームから届き CSRF トークンを持ち得ないため、検証を外す。
+  # 副作用は GET と同じで、state と PKCE で保護している
+  skip_forgery_protection only: :show
+
   REQUIRED_PARAMS = %w[
     client_id redirect_uri response_type scope state
     code_challenge code_challenge_method
