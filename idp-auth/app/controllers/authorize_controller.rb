@@ -28,6 +28,14 @@ class AuthorizeController < ApplicationController
     redirect_with_error(e.message)
   end
 
+  # ログイン・同意の画面から戻ったときに、保存した authorize パラメータで認可をやり直す
+  def resume
+    stored = session.delete(:authorize_params)
+    return render plain: 'invalid_request', status: :bad_request if stored.blank?
+
+    redirect_to "/authorize?#{stored.to_query}"
+  end
+
   private
 
   def fetch_client
