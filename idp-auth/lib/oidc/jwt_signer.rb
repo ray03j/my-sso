@@ -11,8 +11,7 @@ module Oidc
       JWT.encode(payload, signing_jwk.signing_key, ALGORITHM, { kid: signing_jwk[:kid] })
     end
 
-    # ヘッダの alg を信用せず RS256 に固定する。公開鍵を HS256 の共通鍵として使わせる
-    # アルゴリズム混同攻撃や alg=none を拒否するため（RFC 8725 §3.1）
+    # ヘッダの alg を信用せず、RS256 以外はすべて拒否する（アルゴリズム混同攻撃や alg=none への対策、RFC 8725 §3.1）
     def self.verify(token)
       JWT.decode(token, nil, true, { algorithms: [ALGORITHM], jwks: jwks })
     end
