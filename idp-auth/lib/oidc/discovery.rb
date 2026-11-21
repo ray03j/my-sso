@@ -28,7 +28,8 @@ module Oidc
         scopes_supported: Scopes::SUPPORTED,
         token_endpoint_auth_methods_supported: %w[client_secret_post client_secret_basic],
         claims_supported: %w[sub name email],
-        id_token_signing_alg_values_supported: ['HS256'],
+        # RS256 は必須（OIDC Core §15.1, Discovery 1.0 §3）。署名に使うアルゴリズムと一致させる
+        id_token_signing_alg_values_supported: [JwtSigner::ALGORITHM],
         code_challenge_methods_supported: ['S256']
       }
     end

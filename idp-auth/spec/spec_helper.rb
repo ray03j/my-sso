@@ -1,6 +1,8 @@
+require 'openssl'
+
 ENV['RAILS_ENV'] ||= 'test'
 ENV['INTERNAL_API_KEY'] ||= 'test-internal-api-key'
-ENV['JWT_SECRET'] ||= 'test-jwt-secret'
+ENV['JWT_PRIVATE_KEY'] ||= OpenSSL::PKey::RSA.generate(2048).to_pem
 ENV['IDP_CLIENT_URL'] ||= 'http://idp-client:3000'
 ENV['IDP_USER_VERIFY_URL'] ||= 'http://idp-user:3001/api/v1/auth/verify'
 require_relative '../config/environment'
