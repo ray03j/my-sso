@@ -7,6 +7,9 @@ class AuthorizeController < ApplicationController
   # 副作用は GET と同じで、state と PKCE で保護している
   skip_forgery_protection only: :show
 
+  # ログイン画面と同意画面を表示する frontend の URL
+  FRONTEND_URL = ENV.fetch('FRONTEND_URL', 'http://localhost:5173').freeze
+
   REQUIRED_PARAMS = %w[
     client_id redirect_uri response_type scope state
     code_challenge code_challenge_method
@@ -45,7 +48,7 @@ class AuthorizeController < ApplicationController
 
   def continue_at(url)
     store_authorize_params!
-    redirect_to url
+    redirect_to url, allow_other_host: true
   end
 
   def validate_required_params!
@@ -108,10 +111,10 @@ class AuthorizeController < ApplicationController
   end
 
   def login_url
-    '/login'
+    "#{FRONTEND_URL}/login"
   end
 
   def consent_url
-    '/consent'
+    "#{FRONTEND_URL}/consent"
   end
 end
