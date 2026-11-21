@@ -103,13 +103,13 @@ RSpec.describe Oidc::JwtSigner do
   describe '.jwks' do
     let(:exported) { described_class.jwks.export[:keys] }
 
-    it '署名に使う公開鍵を 1 つ含む' do
+    it '署名に使う公開鍵を 1 つ含むこと' do
       expect(exported.size).to eq(1)
       expect(exported.first).to include(kty: 'RSA', use: 'sig', alg: 'RS256', kid: kid, e: 'AQAB')
       expect(exported.first[:n]).to be_present
     end
 
-    it '秘密鍵の成分を含まない' do
+    it '秘密鍵の成分を含まないこと' do
       expect(exported.first.keys).not_to include(:d, :p, :q, :dp, :dq, :qi)
     end
   end
