@@ -33,8 +33,12 @@ module Auth
       }
     end
 
+    # 署名・有効期限に加え、/revoke で失効させていないかを確かめる
     def self.verify_access_token(token)
-      Oidc::JwtSigner.verify(token).first
+      payload = Oidc::JwtSigner.verify(token).first
+      raise InvalidTokenError, 'token has been revoked' if AccessToken.revoked_token?(token)
+
+      payload
     rescue JWT::DecodeError => e
       raise InvalidTokenError, e.message
     end
