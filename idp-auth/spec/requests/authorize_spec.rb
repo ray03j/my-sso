@@ -167,7 +167,7 @@ RSpec.describe 'Authorize', type: :request do
         expect(response).to redirect_to('/login')
       end
 
-      it 'CSRF トークンがなくても、フォームで送られたパラメータを次のリクエストまでセッションに保持する' do
+      it 'CSRF トークンがなくても、フォームで送られたパラメータを次のリクエストまでセッションに保持する', :forgery_protection do
         post '/authorize', params: valid_params
         get '/.well-known/openid-configuration'
         expect(session[:authorize_params]).to include(valid_params.stringify_keys)
