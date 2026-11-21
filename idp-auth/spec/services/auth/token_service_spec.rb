@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Auth::TokenService do
   describe '.issue_access_token' do
-    it 'JWT アクセストークンを発行する' do
+    it 'JWT アクセストークンを発行すること' do
       token = described_class.issue_access_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001'
@@ -11,7 +11,7 @@ RSpec.describe Auth::TokenService do
       expect(AccessToken.count).to eq(1)
     end
 
-    it '発行したJWTを検証できる' do
+    it '発行したJWTを検証できること' do
       token = described_class.issue_access_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001'
@@ -22,7 +22,7 @@ RSpec.describe Auth::TokenService do
       expect(payload['exp']).to be_present
     end
 
-    it 'sub / client_id / scope / exp / iat / jti クレームを含む' do
+    it 'sub / client_id / scope / exp / iat / jti クレームを含むこと' do
       token = described_class.issue_access_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001',
@@ -36,7 +36,7 @@ RSpec.describe Auth::TokenService do
       expect(payload['jti']).to be_present
     end
 
-    it '有効期限は 15 分後' do
+    it '有効期限は 15 分後であること' do
       token = described_class.issue_access_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001'
@@ -47,7 +47,7 @@ RSpec.describe Auth::TokenService do
   end
 
   describe '.verify_access_token' do
-    it '改竄されたJWTを拒否する' do
+    it '改竄されたJWTを拒否すること' do
       token = described_class.issue_access_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001'
@@ -58,7 +58,7 @@ RSpec.describe Auth::TokenService do
       end.to raise_error(Auth::TokenService::InvalidTokenError)
     end
 
-    it '期限切れのJWTを拒否する' do
+    it '期限切れのJWTを拒否すること' do
       expired = Oidc::JwtSigner.sign(
         { sub: '550e8400-e29b-41d4-a716-446655440000', client_id: 'c1', scope: 'openid', exp: 1.hour.ago.to_i }
       )
@@ -67,7 +67,7 @@ RSpec.describe Auth::TokenService do
       end.to raise_error(Auth::TokenService::InvalidTokenError)
     end
 
-    it '同じ kid で別の秘密鍵により署名されたJWTを拒否する' do
+    it '同じ kid で別の秘密鍵により署名されたJWTを拒否すること' do
       forged = JWT.encode(
         { sub: '550e8400-e29b-41d4-a716-446655440000', client_id: 'c1', scope: 'openid',
           exp: 1.hour.from_now.to_i },
@@ -78,7 +78,7 @@ RSpec.describe Auth::TokenService do
       end.to raise_error(Auth::TokenService::InvalidTokenError)
     end
 
-    it 'alg=none の署名なしJWTを拒否する' do
+    it 'alg=none の署名なしJWTを拒否すること' do
       unsigned = JWT.encode(
         { sub: '550e8400-e29b-41d4-a716-446655440000', client_id: 'c1', scope: 'openid',
           exp: 1.hour.from_now.to_i },
@@ -91,7 +91,7 @@ RSpec.describe Auth::TokenService do
   end
 
   describe '.issue_refresh_token' do
-    it 'リフレッシュトークンを発行する' do
+    it 'リフレッシュトークンを発行すること' do
       token = described_class.issue_refresh_token(
         user_id: '550e8400-e29b-41d4-a716-446655440000',
         client_id: '550e8400-e29b-41d4-a716-446655440001'
