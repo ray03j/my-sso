@@ -51,6 +51,18 @@ RSpec.describe 'GET /authorize/continue', type: :request do
       expect(response).to redirect_to(%r{\Ahttp://localhost:5174/callback\?code=.+&state=abc123\z})
     end
 
+    it 'ログイン API でセッションを作り直しても、保存したパラメータで再開できること' do
+      stub_request(:post, Auth::SessionService.idp_user_verify_url).to_return(
+        status: 200,
+        body: { user: { id: user_id, email: 'test@example.com', name: 'Test' } }.to_json,
+        headers: { 'Content-Type' => 'application/json' }
+      )
+      post '/api/v1/auth/session', params: { email: 'test@example.com', password: 'password123' }
+
+      get '/authorize/continue'
+      expect(URI.parse(response.location).path).to eq('/authorize')
+    end
+
     it 'ログインしたが未同意なら、もう一度パラメータを保存して同意画面へ送ること' do
       sign_in(user_id: user_id)
 
