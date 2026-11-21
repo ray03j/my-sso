@@ -6,6 +6,7 @@ Rails.application.routes.draw do
         resource :csrf_token, only: %i[show], controller: 'csrf_token'
       end
       resource :consent, only: %i[create], controller: 'consent'
+      resource :authorization_request, only: %i[show], controller: 'authorization_request'
     end
   end
 
