@@ -50,9 +50,8 @@ class TokensController < ApplicationController
     id_token = Auth::TokenService.issue_id_token(
       user_id: code_record.user_id,
       client_id: client['client_id'],
-      nonce: code_record.nonce,
       access_token: access_token,
-      auth_time: code_record.auth_time
+      nonce: code_record.nonce, auth_time: code_record.auth_time
     )
     refresh_token = Auth::TokenService.issue_refresh_token(
       user_id: code_record.user_id,
