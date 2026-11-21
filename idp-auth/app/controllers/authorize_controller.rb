@@ -1,10 +1,8 @@
 class AuthorizeController < ApplicationController
   class AuthorizeError < StandardError; end
 
-  # 認可エンドポイントは POST にも対応しなければならない（OIDC Core §3.1.2.1）。
-  # POST は RP のページのフォームから届くため、idp-auth が発行する CSRF トークンを持ち得ない。
-  # null_session のままだと authorize パラメータを保存できず、ログイン後に認可へ戻れなくなる。
-  # 副作用は GET と同じ（登録済み redirect_uri への認可コード発行のみ）で、state と PKCE で保護しているため検証を外す
+  # OIDC で必須の POST（§3.1.2.1）は RP のフォームから届き CSRF トークンを持ち得ないため、検証を外す。
+  # 副作用は GET と同じで、state と PKCE で保護している
   skip_forgery_protection only: :show
 
   REQUIRED_PARAMS = %w[
