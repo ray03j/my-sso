@@ -1,4 +1,4 @@
-FROM ruby:3.3.9
+FROM ruby:3.4.13
 WORKDIR /app
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
