@@ -9,7 +9,8 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://idp-auth:3000',
-        changeOrigin: true,
+        // Rails は CSRF 検証で Origin と Host の一致も確かめるため、ブラウザの Host をそのまま渡す
+        changeOrigin: false,
       },
     },
   },
