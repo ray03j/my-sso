@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
         clientId: env.RP_CLIENT_ID ?? '',
         clientSecret: env.RP_CLIENT_SECRET ?? '',
         redirectUri: env.RP_REDIRECT_URI ?? `http://localhost:${port}/callback`,
+        postLogoutRedirectUri: env.RP_POST_LOGOUT_REDIRECT_URI ?? `http://localhost:${port}/`,
       }),
     ],
     server: {

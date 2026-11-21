@@ -15,6 +15,8 @@ export type RpConfig = {
   clientId: string
   clientSecret: string
   redirectUri: string
+  // ログアウト後に IdP から戻る先。idp-client に post_logout_redirect_uris として登録しておく
+  postLogoutRedirectUri: string
 }
 
 type Discovery = {
@@ -23,13 +25,14 @@ type Discovery = {
   token_endpoint: string
   userinfo_endpoint: string
   jwks_uri: string
+  end_session_endpoint: string
 }
 
 type PendingLogin = { state: string; nonce: string; codeVerifier: string }
 
 type Session = {
   pending?: PendingLogin
-  user?: { claims: JWTPayload; userinfo: Record<string, unknown> }
+  user?: { claims: JWTPayload; userinfo: Record<string, unknown>; idToken: string }
 }
 
 const SCOPE = 'openid profile email'
@@ -100,7 +103,7 @@ export function oidcBff(config: RpConfig): Plugin {
     // UserInfo の sub は ID Token の sub と一致しなければならない（OIDC Core §5.3.2）
     if (userinfo.sub !== claims.sub) throw new Error('userinfo sub mismatch')
 
-    session.user = { claims, userinfo }
+    session.user = { claims, userinfo, idToken: tokens.id_token }
     redirect(res, '/')
   }
 
@@ -147,12 +150,27 @@ export function oidcBff(config: RpConfig): Plugin {
 
   function me(req: IncomingMessage, res: ServerResponse) {
     const { user } = getSession(req, res)
-    sendJson(res, user ? 200 : 401, { rp: config.name, user: user ?? null })
+    // ID Token の文字列はブラウザに渡さない
+    const body = user ? { claims: user.claims, userinfo: user.userinfo } : null
+    sendJson(res, user ? 200 : 401, { rp: config.name, user: body })
   }
 
-  function logout(req: IncomingMessage, res: ServerResponse) {
-    getSession(req, res).user = undefined
-    redirect(res, '/')
+  // RP のセッションを消したうえで、IdP の end_session_endpoint に送って IdP のセッションも終了する
+  // （RP-Initiated Logout 1.0）。IdP のセッションが残ると、他の RP で自動ログインされたままになるため
+  async function logout(req: IncomingMessage, res: ServerResponse) {
+    const session = getSession(req, res)
+    const idToken = session.user?.idToken
+    session.user = undefined
+    if (!idToken) return redirect(res, '/')
+
+    const { end_session_endpoint } = await getDiscovery()
+    const url = new URL(end_session_endpoint)
+    url.search = new URLSearchParams({
+      id_token_hint: idToken,
+      client_id: config.clientId,
+      post_logout_redirect_uri: config.postLogoutRedirectUri,
+    }).toString()
+    redirect(res, url.toString())
   }
 
   return {
