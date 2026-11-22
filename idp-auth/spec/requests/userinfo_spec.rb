@@ -193,7 +193,7 @@ RSpec.describe 'Userinfo', type: :request do
         expect(response.parsed_body).to eq('sub' => user_id, 'name' => 'Test User', 'email' => 'test@example.com')
       end
 
-      it 'CSRF トークンなしのフォーム送信でも 200 OK を返すこと' do
+      it 'CSRF トークンなしのフォーム送信でも 200 OK を返すこと', :forgery_protection do
         post '/userinfo', params: {}, headers: {
           'Authorization' => "Bearer #{access_token}",
           'Content-Type' => 'application/x-www-form-urlencoded'

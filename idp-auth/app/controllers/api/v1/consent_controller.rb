@@ -1,6 +1,8 @@
 module Api
   module V1
     class ConsentController < ApplicationController
+      include CsrfProtectedApi
+
       def create
         return head :unauthorized unless authenticated?
 

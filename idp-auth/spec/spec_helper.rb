@@ -14,6 +14,7 @@ require 'factory_bot_rails'
 require 'webmock/rspec'
 require 'httparty'
 require 'support/request_helpers'
+require 'support/forgery_protection'
 
 RSpec.configure do |config|
   config.use_transactional_fixtures = true
