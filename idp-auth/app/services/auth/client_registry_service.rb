@@ -6,14 +6,18 @@ module Auth
     # redirect_uri と scope が登録内容に許可されている場合のみクライアント情報（Hash）を返し、
     # 取得失敗・不一致の場合は nil を返す。
     def self.fetch(client_id:, redirect_uri:, scope:)
-      response = HTTParty.get(client_url(client_id), headers: headers)
-      return nil unless response.success?
-
-      client = response.parsed_response
+      client = find(client_id)
+      return nil if client.nil?
       return nil unless permitted_redirect_uri?(client, redirect_uri)
       return nil unless permitted_scope?(client, scope)
 
       client
+    end
+
+    # 登録情報をそのまま返す。取得できなければ nil
+    def self.find(client_id)
+      response = HTTParty.get(client_url(client_id), headers: headers)
+      response.success? ? response.parsed_response : nil
     end
 
     def self.client_url(client_id)

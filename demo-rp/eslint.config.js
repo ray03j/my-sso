@@ -3,6 +3,7 @@ import pluginVue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
 
 export default tseslint.config(
+  { ignores: ['dist/'] },
   tseslint.configs.eslintRecommended,
   ...tseslint.configs.recommended,
   pluginVue.configs['flat/recommended'],

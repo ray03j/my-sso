@@ -20,4 +20,7 @@ Rails.application.routes.draw do
   # UserInfo は GET と POST の両方に対応しなければならない（OIDC Core §5.3）
   get '/userinfo', to: 'userinfo#show'
   post '/userinfo', to: 'userinfo#show'
+  # RP-Initiated Logout は GET と POST の両方に対応しなければならない（RP-Initiated Logout 1.0 §2）
+  get '/end_session', to: 'end_session#show'
+  post '/end_session', to: 'end_session#show'
 end

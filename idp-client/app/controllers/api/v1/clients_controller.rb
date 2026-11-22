@@ -29,7 +29,7 @@ module Api
       private
 
       def client_params
-        params.require(:client).permit(:name, redirect_uris: [], allowed_scopes: [])
+        params.require(:client).permit(:name, redirect_uris: [], post_logout_redirect_uris: [], allowed_scopes: [])
       end
 
       def client_response(client)
@@ -37,6 +37,7 @@ module Api
           client_id: client.client_id,
           name: client.name,
           redirect_uris: client.redirect_uris,
+          post_logout_redirect_uris: client.post_logout_redirect_uris,
           allowed_scopes: client.allowed_scopes,
           created_at: client.created_at,
           updated_at: client.updated_at

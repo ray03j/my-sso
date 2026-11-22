@@ -11,9 +11,10 @@ module Oidc
       JWT.encode(payload, signing_jwk.signing_key, ALGORITHM, { kid: signing_jwk[:kid] })
     end
 
-    # ヘッダの alg を信用せず、RS256 以外はすべて拒否する（アルゴリズム混同攻撃や alg=none への対策、RFC 8725 §3.1）
-    def self.verify(token)
-      JWT.decode(token, nil, true, { algorithms: [ALGORITHM], jwks: jwks })
+    # ヘッダの alg を信用せず、RS256 以外はすべて拒否する（アルゴリズム混同攻撃や alg=none への対策、RFC 8725 §3.1）。
+    # verify_expiration: false は、期限切れでも受け付ける id_token_hint の検証に使う
+    def self.verify(token, verify_expiration: true)
+      JWT.decode(token, nil, true, { algorithms: [ALGORITHM], jwks: jwks, verify_expiration: verify_expiration })
     end
 
     # /jwks.json で公開する JWK Set。鍵ローテーション時に複数の鍵を並べられるよう Set で返す
