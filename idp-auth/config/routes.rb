@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   post '/authorize', to: 'authorize#show'
   get '/authorize/continue', to: 'authorize#resume'
   post '/token', to: 'tokens#create'
+  post '/revoke', to: 'revocations#create'
   get '/.well-known/openid-configuration', to: 'discovery#show'
   get '/jwks.json', to: 'jwks#show'
   # UserInfo は GET と POST の両方に対応しなければならない（OIDC Core §5.3）

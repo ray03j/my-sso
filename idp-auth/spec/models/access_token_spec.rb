@@ -37,6 +37,38 @@ RSpec.describe AccessToken, type: :model do
     end
   end
 
+  describe '#revoke!' do
+    it '失効日時を記録し、revoked? が true になること' do
+      token = described_class.generate_for(user_id: user_id, client_id: client_id)
+      token.revoke!
+      expect(token.reload).to be_revoked
+      expect(token.revoked_at).to be_within(5).of(Time.current)
+    end
+
+    it 'すでに失効していれば失効日時を変えないこと' do
+      token = described_class.generate_for(user_id: user_id, client_id: client_id)
+      token.update!(revoked_at: 1.day.ago)
+      expect { token.revoke! }.not_to(change { token.reload.revoked_at })
+    end
+  end
+
+  describe '.revoked_token?' do
+    let(:record) { described_class.generate_for(user_id: user_id, client_id: client_id) }
+
+    it '失効させたトークンなら true を返すこと' do
+      record.revoke!
+      expect(described_class.revoked_token?(record.token)).to be true
+    end
+
+    it '失効していないトークンなら false を返すこと' do
+      expect(described_class.revoked_token?(record.token)).to be false
+    end
+
+    it '記録のないトークンなら false を返すこと' do
+      expect(described_class.revoked_token?('unknown')).to be false
+    end
+  end
+
   describe '.generate_for' do
     it 'ランダムな token を発行し 15 分後に期限切れとなる' do
       token = described_class.generate_for(user_id: user_id, client_id: client_id, scope: 'openid profile')
