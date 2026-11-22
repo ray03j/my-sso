@@ -22,6 +22,8 @@ RSpec.describe 'Authorize', type: :request do
   end
 
   let(:user_id) { '550e8400-e29b-41d4-a716-446655440000' }
+  let(:login_url) { "#{AuthorizeController::FRONTEND_URL}/login" }
+  let(:consent_url) { "#{AuthorizeController::FRONTEND_URL}/consent" }
 
   before do
     allow(HTTParty).to receive(:get).and_return(
@@ -32,7 +34,7 @@ RSpec.describe 'Authorize', type: :request do
   context '未ログインの場合' do
     it 'ログイン画面へリダイレクトする' do
       get '/authorize', params: valid_params
-      expect(response).to redirect_to('/login')
+      expect(response).to redirect_to(login_url)
     end
 
     it 'authorize パラメータをセッションに保持する' do
@@ -48,7 +50,7 @@ RSpec.describe 'Authorize', type: :request do
 
     it '同意画面へリダイレクトする' do
       get '/authorize', params: valid_params
-      expect(response).to redirect_to('/consent')
+      expect(response).to redirect_to(consent_url)
     end
   end
 
@@ -128,7 +130,7 @@ RSpec.describe 'Authorize', type: :request do
 
     it '再び同意画面へリダイレクトする' do
       get '/authorize', params: valid_params
-      expect(response).to redirect_to('/consent')
+      expect(response).to redirect_to(consent_url)
     end
 
     it '認可コードを発行しない' do
@@ -150,7 +152,7 @@ RSpec.describe 'Authorize', type: :request do
 
     it '再び同意画面へリダイレクトする' do
       get '/authorize', params: valid_params.merge(scope: 'openid email')
-      expect(response).to redirect_to('/consent')
+      expect(response).to redirect_to(consent_url)
     end
 
     it '認可コードを発行しない' do
@@ -164,10 +166,10 @@ RSpec.describe 'Authorize', type: :request do
     context '未ログインの場合' do
       it 'ログイン画面へリダイレクトする' do
         post '/authorize', params: valid_params
-        expect(response).to redirect_to('/login')
+        expect(response).to redirect_to(login_url)
       end
 
-      it 'CSRF トークンがなくても、フォームで送られたパラメータを次のリクエストまでセッションに保持する' do
+      it 'CSRF トークンがなくても、フォームで送られたパラメータを次のリクエストまでセッションに保持する', :forgery_protection do
         post '/authorize', params: valid_params
         get '/.well-known/openid-configuration'
         expect(session[:authorize_params]).to include(valid_params.stringify_keys)
@@ -258,7 +260,7 @@ RSpec.describe 'Authorize', type: :request do
 
       it 'ログイン済み・同意済みでもログイン画面へリダイレクトする' do
         get '/authorize', params: valid_params.merge(prompt: 'login')
-        expect(response).to redirect_to('/login')
+        expect(response).to redirect_to(login_url)
       end
 
       it 'ログイン後に再びログインを求めないよう、保存するパラメータから prompt を外す' do
@@ -284,13 +286,13 @@ RSpec.describe 'Authorize', type: :request do
       it '認証からの経過時間が max_age を超えていればログイン画面へリダイレクトする' do
         sign_in(user_id: user_id, auth_time: 2.hours.ago.to_i)
         get '/authorize', params: valid_params.merge(max_age: 3600)
-        expect(response).to redirect_to('/login')
+        expect(response).to redirect_to(login_url)
       end
 
       it '認証時刻が分からないセッションならログイン画面へリダイレクトする' do
         sign_in(user_id: user_id, auth_time: nil)
         get '/authorize', params: valid_params.merge(max_age: 3600)
-        expect(response).to redirect_to('/login')
+        expect(response).to redirect_to(login_url)
       end
 
       it '0 以上の整数でなければ error=invalid_request を返す' do

@@ -9,6 +9,7 @@ class Client < ApplicationRecord
   validates :allowed_scopes, presence: true
 
   validate :redirect_uris_must_be_valid_urls
+  validate :post_logout_redirect_uris_must_be_valid_urls
   validate :allowed_scopes_must_be_supported
 
   attr_reader :client_secret
@@ -35,6 +36,14 @@ class Client < ApplicationRecord
     super(uris.is_a?(Array) ? uris.join("\n") : uris.to_s)
   end
 
+  def post_logout_redirect_uris
+    (super || '').tr("\r", "\n").lines.map(&:strip).compact_blank
+  end
+
+  def post_logout_redirect_uris=(uris)
+    super(uris.is_a?(Array) ? uris.join("\n") : uris.to_s)
+  end
+
   def allowed_scopes
     (super || '').split.map(&:strip).compact_blank.uniq
   end
@@ -46,12 +55,20 @@ class Client < ApplicationRecord
   private
 
   def redirect_uris_must_be_valid_urls
-    redirect_uris.each do |uri|
+    validate_urls(:redirect_uris)
+  end
+
+  def post_logout_redirect_uris_must_be_valid_urls
+    validate_urls(:post_logout_redirect_uris)
+  end
+
+  def validate_urls(attribute)
+    public_send(attribute).each do |uri|
       parsed = URI.parse(uri)
       valid = (parsed.is_a?(URI::HTTP) || parsed.is_a?(URI::HTTPS)) && parsed.host.present?
-      errors.add(:redirect_uris, "#{uri} is not a valid URL") unless valid
+      errors.add(attribute, "#{uri} is not a valid URL") unless valid
     rescue URI::InvalidURIError
-      errors.add(:redirect_uris, "#{uri} is not a valid URL")
+      errors.add(attribute, "#{uri} is not a valid URL")
     end
   end
 

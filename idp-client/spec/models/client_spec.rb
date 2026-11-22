@@ -26,6 +26,23 @@ RSpec.describe Client, type: :model do
       expect(client).not_to be_valid
     end
 
+    it 'post_logout_redirect_uris は省略できること' do
+      client = build(:client, post_logout_redirect_uris: [])
+      expect(client).to be_valid
+      expect(client.post_logout_redirect_uris).to eq([])
+    end
+
+    it 'post_logout_redirect_uris に無効な URL を許可しないこと' do
+      client = build(:client, post_logout_redirect_uris: ['not-a-url'])
+      expect(client).not_to be_valid
+      expect(client.errors[:post_logout_redirect_uris]).to be_present
+    end
+
+    it 'post_logout_redirect_uris は改行区切りで複数を保存できること' do
+      client = create(:client, post_logout_redirect_uris: ['http://localhost:5174/', 'http://localhost:5174/bye'])
+      expect(client.reload.post_logout_redirect_uris).to eq(['http://localhost:5174/', 'http://localhost:5174/bye'])
+    end
+
     it 'redirect_uris に無効な URL を許可しない' do
       client = build(:client, redirect_uris: ['not-a-url'])
       expect(client).not_to be_valid

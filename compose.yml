@@ -74,6 +74,7 @@ services:
     networks:
       - sso_network
 
+  # SSO を確かめるため、同じ demo-rp を別の client_id とポートで 2 つ起動する
   demo-rp:
     build: ./demo-rp
     command: pnpm dev
@@ -81,6 +82,30 @@ services:
       - ./demo-rp:/app
     ports:
       - "5174:5174"
+    environment:
+      RP_NAME: Demo RP
+      RP_PORT: 5174
+      RP_CLIENT_ID: 550e8400-e29b-41d4-a716-446655440000
+      RP_CLIENT_SECRET: demo_secret
+      IDP_ISSUER: http://localhost:3000
+      IDP_INTERNAL_URL: http://idp-auth:3000
+    networks:
+      - sso_network
+
+  demo-rp-2:
+    build: ./demo-rp
+    command: pnpm dev
+    volumes:
+      - ./demo-rp:/app
+    ports:
+      - "5175:5175"
+    environment:
+      RP_NAME: Demo RP 2
+      RP_PORT: 5175
+      RP_CLIENT_ID: 550e8400-e29b-41d4-a716-446655440002
+      RP_CLIENT_SECRET: demo_secret_2
+      IDP_ISSUER: http://localhost:3000
+      IDP_INTERNAL_URL: http://idp-auth:3000
     networks:
       - sso_network
 

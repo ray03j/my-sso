@@ -7,6 +7,9 @@ class AuthorizeController < ApplicationController
   # 副作用は GET と同じで、state と PKCE で保護している
   skip_forgery_protection only: :show
 
+  # ログイン画面と同意画面を表示する frontend の URL
+  FRONTEND_URL = ENV.fetch('FRONTEND_URL', 'http://localhost:5173').freeze
+
   REQUIRED_PARAMS = %w[
     client_id redirect_uri response_type scope state
     code_challenge code_challenge_method
@@ -23,6 +26,14 @@ class AuthorizeController < ApplicationController
     redirect_to redirect_uri_with_code(issue_authorization_code(client)), allow_other_host: true
   rescue AuthorizeError => e
     redirect_with_error(e.message)
+  end
+
+  # ログイン・同意の画面から戻ったときに、保存した authorize パラメータで認可をやり直す
+  def resume
+    stored = session.delete(:authorize_params)
+    return render plain: 'invalid_request', status: :bad_request if stored.blank?
+
+    redirect_to "/authorize?#{stored.to_query}"
   end
 
   private
@@ -45,7 +56,7 @@ class AuthorizeController < ApplicationController
 
   def continue_at(url)
     store_authorize_params!
-    redirect_to url
+    redirect_to url, allow_other_host: true
   end
 
   def validate_required_params!
@@ -104,18 +115,14 @@ class AuthorizeController < ApplicationController
   end
 
   def build_redirect_uri(redirect_uri, error: nil, code: nil)
-    uri = URI.parse(redirect_uri)
-    query = Rack::Utils.parse_query(uri.query)
-    extras = { 'error' => error, 'code' => code, 'state' => params[:state] }.compact_blank
-    uri.query = Rack::Utils.build_nested_query(query.merge(extras))
-    uri.to_s
+    Auth::RedirectUri.build(redirect_uri, error: error, code: code, state: params[:state])
   end
 
   def login_url
-    '/login'
+    "#{FRONTEND_URL}/login"
   end
 
   def consent_url
-    '/consent'
+    "#{FRONTEND_URL}/consent"
   end
 end

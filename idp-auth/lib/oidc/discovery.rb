@@ -19,6 +19,7 @@ module Oidc
         token_endpoint: "#{ISSUER}/token",
         userinfo_endpoint: "#{ISSUER}/userinfo",
         jwks_uri: "#{ISSUER}/jwks.json",
+        end_session_endpoint: "#{ISSUER}/end_session",
         revocation_endpoint: "#{ISSUER}/revoke"
       }
     end

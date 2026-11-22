@@ -41,6 +41,21 @@ RSpec.describe Oidc::JwtSigner do
       end.to raise_error(JWT::ExpiredSignature)
     end
 
+    it 'verify_expiration: false なら期限切れでも署名を検証できること' do
+      expired = described_class.sign({ sub: 1, exp: 1.hour.ago.to_i })
+      decoded, = described_class.verify(expired, verify_expiration: false)
+      expect(decoded['sub']).to eq(1)
+    end
+
+    it 'verify_expiration: false でも改竄されたJWTは拒否すること' do
+      expired = described_class.sign({ sub: 1, exp: 1.hour.ago.to_i })
+      header, _payload, signature = expired.split('.')
+      tampered = [header, Base64.urlsafe_encode64({ sub: 2 }.to_json, padding: false), signature].join('.')
+      expect do
+        described_class.verify(tampered, verify_expiration: false)
+      end.to raise_error(JWT::VerificationError)
+    end
+
     it '同じ kid で別の秘密鍵により署名されたJWTを拒否すること' do
       forged = JWT.encode(payload, other_key, 'RS256', { kid: kid })
       expect do
