@@ -26,13 +26,14 @@ type Discovery = {
   userinfo_endpoint: string
   jwks_uri: string
   end_session_endpoint: string
+  revocation_endpoint: string
 }
 
 type PendingLogin = { state: string; nonce: string; codeVerifier: string }
 
 type Session = {
   pending?: PendingLogin
-  user?: { claims: JWTPayload; userinfo: Record<string, unknown>; idToken: string }
+  user?: { claims: JWTPayload; userinfo: Record<string, unknown>; idToken: string; refreshToken: string }
 }
 
 const SCOPE = 'openid profile email'
@@ -103,19 +104,24 @@ export function oidcBff(config: RpConfig): Plugin {
     // UserInfo の sub は ID Token の sub と一致しなければならない（OIDC Core §5.3.2）
     if (userinfo.sub !== claims.sub) throw new Error('userinfo sub mismatch')
 
-    session.user = { claims, userinfo, idToken: tokens.id_token }
+    session.user = { claims, userinfo, idToken: tokens.id_token, refreshToken: tokens.refresh_token }
     redirect(res, '/')
   }
 
   // client_secret_basic でクライアント認証し、認可コードをトークンに交換する
-  async function exchangeCode(code: string, codeVerifier: string) {
-    const { token_endpoint } = await getDiscovery()
+  // client_secret_basic の Authorization ヘッダ（/token と /revoke で使う）
+  function clientAuthHeaders() {
     const credentials = Buffer.from(
       `${encodeURIComponent(config.clientId)}:${encodeURIComponent(config.clientSecret)}`
     ).toString('base64')
+    return { Authorization: `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' }
+  }
+
+  async function exchangeCode(code: string, codeVerifier: string) {
+    const { token_endpoint } = await getDiscovery()
     const response = await fetch(internal(token_endpoint), {
       method: 'POST',
-      headers: { Authorization: `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: clientAuthHeaders(),
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
@@ -124,7 +130,19 @@ export function oidcBff(config: RpConfig): Plugin {
       }),
     })
     if (!response.ok) throw new Error(`token request failed: ${response.status}`)
-    return (await response.json()) as { access_token: string; id_token: string }
+    return (await response.json()) as { access_token: string; id_token: string; refresh_token: string }
+  }
+
+  // refresh_token を失効させる（RFC 7009）。IdP は同じユーザー・RP の access_token も失効させる。
+  // 失効に失敗してもログアウトは続ける
+  async function revokeTokens(refreshToken: string) {
+    const { revocation_endpoint } = await getDiscovery()
+    const response = await fetch(internal(revocation_endpoint), {
+      method: 'POST',
+      headers: clientAuthHeaders(),
+      body: new URLSearchParams({ token: refreshToken, token_type_hint: 'refresh_token' }),
+    })
+    if (!response.ok) throw new Error(`revocation request failed: ${response.status}`)
   }
 
   // JWKS の公開鍵で RS256 の署名を検証し、iss・aud・exp・nonce を確かめる（OIDC Core §3.1.3.7）
@@ -155,18 +173,23 @@ export function oidcBff(config: RpConfig): Plugin {
     sendJson(res, user ? 200 : 401, { rp: config.name, user: body })
   }
 
-  // RP のセッションを消したうえで、IdP の end_session_endpoint に送って IdP のセッションも終了する
+  // RP のセッションを消し、トークンを失効させたうえで、IdP の end_session_endpoint に送って IdP のセッションも終了する
   // （RP-Initiated Logout 1.0）。IdP のセッションが残ると、他の RP で自動ログインされたままになるため
   async function logout(req: IncomingMessage, res: ServerResponse) {
     const session = getSession(req, res)
-    const idToken = session.user?.idToken
+    const user = session.user
     session.user = undefined
-    if (!idToken) return redirect(res, '/')
+    if (!user) return redirect(res, '/')
+
+    // ログアウト後もトークンが有効期限まで使えてしまわないよう、IdP に失効させる
+    await revokeTokens(user.refreshToken).catch((error: unknown) => {
+      console.warn(`[demo-rp] token revocation failed: ${String(error)}`)
+    })
 
     const { end_session_endpoint } = await getDiscovery()
     const url = new URL(end_session_endpoint)
     url.search = new URLSearchParams({
-      id_token_hint: idToken,
+      id_token_hint: user.idToken,
       client_id: config.clientId,
       post_logout_redirect_uri: config.postLogoutRedirectUri,
     }).toString()
