@@ -51,3 +51,15 @@ export async function fetchAuthorizationRequest(): Promise<AuthorizationRequest 
 export function resumeAuthorization(): void {
   window.location.assign(`${IDP_BASE_URL}/authorize/continue`)
 }
+
+// 同意の結果を送り、次に遷移する URL を返す（承認なら認可の再開、拒否なら RP への access_denied）
+export async function submitConsent(request: AuthorizationRequest, approved: boolean): Promise<string | null> {
+  const response = await postJson('/api/v1/consent', {
+    client_id: request.client_id,
+    scope: request.scope,
+    approved,
+  })
+  if (!response.ok) throw new ApiError(response.status)
+  const body: { redirect_to: string | null } = await response.json()
+  return body.redirect_to
+}
