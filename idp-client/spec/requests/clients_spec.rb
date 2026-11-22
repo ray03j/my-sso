@@ -25,6 +25,13 @@ RSpec.describe 'Clients', type: :request do
       }
     end
 
+    it 'post_logout_redirect_uris を指定して作成できること' do
+      params = valid_params.deep_merge(client: { post_logout_redirect_uris: ['http://localhost:5174/'] })
+      post '/api/v1/clients', params: params, headers: headers
+      expect(response).to have_http_status(:created)
+      expect(response.parsed_body['post_logout_redirect_uris']).to eq(['http://localhost:5174/'])
+    end
+
     context '有効なパラメータの場合' do
       it 'クライアントを作成する' do
         expect do
@@ -181,6 +188,12 @@ RSpec.describe 'Clients', type: :request do
       expect(json['name']).to eq(client.name)
       expect(json['redirect_uris']).to eq(client.redirect_uris)
       expect(json['allowed_scopes']).to eq(client.allowed_scopes)
+    end
+
+    it 'ログアウト後の戻り先 post_logout_redirect_uris を返すこと' do
+      client.update!(post_logout_redirect_uris: ['http://localhost:5174/'])
+      get "/api/v1/clients/#{client.client_id}", headers: headers
+      expect(response.parsed_body['post_logout_redirect_uris']).to eq(['http://localhost:5174/'])
     end
 
     it '詳細に client_secret_hash が含まれない' do
