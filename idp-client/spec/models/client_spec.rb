@@ -159,6 +159,27 @@ RSpec.describe Client, type: :model do
     end
   end
 
+  describe 'client_secret' do
+    it '空の client_secret を代入しても既存のハッシュを変えない' do
+      client = create(:client)
+      expect { client.client_secret = '' }.not_to change(client, :client_secret_hash)
+    end
+
+    it '空の secret は照合に失敗する' do
+      expect(create(:client).client_secret_valid?('')).to be false
+    end
+
+    it 'client_secret_hash が未設定なら照合に失敗する' do
+      expect(Client.new.client_secret_valid?('test_client_secret')).to be false
+    end
+  end
+
+  it 'URL として解析できない redirect_uris を許可しない' do
+    client = build(:client, redirect_uris: ['http://exa mple.com/callback'])
+    expect(client).not_to be_valid
+    expect(client.errors[:redirect_uris]).to include('http://exa mple.com/callback is not a valid URL')
+  end
+
   describe '配列変換' do
     it 'redirect_uris を配列として読み書きできる' do
       client = create(:client, redirect_uris: ['http://a/callback', 'http://b/callback'])
@@ -167,6 +188,17 @@ RSpec.describe Client, type: :model do
 
     it 'allowed_scopes を配列として読み書きできる' do
       client = create(:client, allowed_scopes: %w[openid email])
+      expect(client.allowed_scopes).to eq(%w[openid email])
+    end
+
+    it '改行区切りの文字列でも redirect_uris / post_logout_redirect_uris を代入できる' do
+      client = create(:client, redirect_uris: "http://a/callback\nhttp://b/callback", post_logout_redirect_uris: 'http://a/')
+      expect(client.redirect_uris).to eq(['http://a/callback', 'http://b/callback'])
+      expect(client.post_logout_redirect_uris).to eq(['http://a/'])
+    end
+
+    it '空白区切りの文字列でも allowed_scopes を代入できる' do
+      client = create(:client, allowed_scopes: 'openid email')
       expect(client.allowed_scopes).to eq(%w[openid email])
     end
   end

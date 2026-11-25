@@ -122,6 +122,31 @@ RSpec.describe 'Authorize', type: :request do
     end
   end
 
+  context 'response_type が code 以外の場合' do
+    it 'error=unsupported_response_type を返す' do
+      get '/authorize', params: valid_params.merge(response_type: 'token')
+      expect(response).to redirect_to('http://localhost:5174/callback?error=unsupported_response_type&state=abc123')
+    end
+  end
+
+  context 'code_challenge_method が S256 以外の場合' do
+    it 'PKCE の plain を受け付けず error=invalid_request を返す' do
+      get '/authorize', params: valid_params.merge(code_challenge_method: 'plain')
+      expect(response).to redirect_to('http://localhost:5174/callback?error=invalid_request&state=abc123')
+    end
+  end
+
+  context 'クライアントに許可されていない scope を要求した場合' do
+    it '400 Bad Request を返し、認可コードを発行しない' do
+      sign_in(user_id: user_id)
+      expect do
+        get '/authorize', params: valid_params.merge(scope: 'openid offline_access')
+      end.not_to change(AuthorizationCode, :count)
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq('invalid_client')
+    end
+  end
+
   context '同意を拒否した後に再度 authorize を実行した場合' do
     before do
       sign_in(user_id: user_id)
@@ -308,6 +333,16 @@ RSpec.describe 'Authorize', type: :request do
         record_consent
         get '/authorize', params: valid_params
         expect(AuthorizationCode.last.auth_time.to_i).to eq(1_700_000_000)
+      end
+
+      it 'ログインしたときにセッションへ保存した認証時刻を認可コードに保存する' do
+        stub_request(:post, Auth::SessionService.idp_user_verify_url)
+          .to_return(status: 200, body: { user: { id: user_id } }.to_json,
+                     headers: { 'Content-Type' => 'application/json' })
+        post '/api/v1/auth/session', params: { email: 'user@example.com', password: 'secret' }
+        record_consent
+        get '/authorize', params: valid_params
+        expect(AuthorizationCode.last.auth_time.to_i).to be_within(5).of(Time.current.to_i)
       end
     end
   end
