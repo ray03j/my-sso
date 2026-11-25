@@ -5,6 +5,7 @@
 */tmp/
 */log/
 */vendor/bundle/
+*/coverage/
 */.bundle/
 */config/master.key
 
