@@ -6,11 +6,12 @@ OIDC / OAuth2 ベースのシングルサインオン（SSO）システムのモ
 
 | サービス | 技術スタック | ポート |
 |---|---|---|
-| idp-auth | Ruby on Rails 7.1 / Ruby 3.3.0 | 3000 |
-| idp-user | Ruby on Rails 7.1 / Ruby 3.3.0 | 3001 |
-| idp-client | Ruby on Rails 7.1 / Ruby 3.3.0 | 3002 |
+| idp-auth | Ruby on Rails 8.1 / Ruby 3.4.13 | 3000 |
+| idp-user | Ruby on Rails 8.1 / Ruby 3.4.13 | 3001 |
+| idp-client | Ruby on Rails 8.1 / Ruby 3.4.13 | 3002 |
 | frontend | Vue 3 / Vite / TypeScript / pnpm | 5173 |
 | demo-rp | Vue 3 / Vite / TypeScript / pnpm | 5174 |
+| demo-rp-2 | demo-rp と同じイメージを別の client_id で起動（SSO 確認用） | 5175 |
 | postgres | PostgreSQL 16 | 5432 |
 
 ## 前提条件
@@ -19,7 +20,8 @@ OIDC / OAuth2 ベースのシングルサインオン（SSO）システムのモ
 - Docker Compose
 - pnpm 9.x（frontend / demo-rp の依存関係インストールに必要）
 - (オプション) lefthook
-  - lefthook を使用する場合、開発中は常に `docker compose up -d` でコンテナを起動しておく必要があります
+  - RuboCop / RSpec はホストで実行するため、ホストに Ruby 3.4.13 と Bundler が必要です（mise を使う場合は `mise install ruby@3.4.13`）
+  - ESLint はコンテナ内で実行するため、`docker compose up -d` でコンテナを起動しておく必要があります
 
 ## 環境構築
 
@@ -48,17 +50,17 @@ docker compose up --build -d
 
 PostgreSQL の初期化スクリプトで `auth_db`, `user_db`, `client_db` が自動作成されます。
 
-その後、各 Rails アプリでマイグレーションを実行してください。
+その後、各 Rails アプリでマイグレーションとシードを実行してください。
 
 ```bash
 # idp-auth
 docker compose exec idp-auth bundle exec rails db:migrate
 
 # idp-user
-docker compose exec idp-user bundle exec rails db:migrate
+docker compose exec idp-user bundle exec rails db:migrate db:seed
 
-# idp-client
-docker compose exec idp-client bundle exec rails db:migrate
+# idp-client（demo-rp / demo-rp-2 のクライアントを登録）
+docker compose exec idp-client bundle exec rails db:migrate db:seed
 ```
 
 ### 5. フロントエンド依存関係のインストール
@@ -76,7 +78,14 @@ cd ../demo-rp && pnpm install
 
 Git フックでコード品質チェックを実行する場合は、ホスト側に lefthook をインストールして有効化してください。
 
-> **注意:** lefthook のフックはコンテナ内でコマンドを実行するため、開発中は常に `docker compose up -d` でコンテナを起動しておく必要があります。
+| フック | 内容 | 実行場所 |
+|---|---|---|
+| pre-commit | RuboCop（idp-auth / idp-user / idp-client） | ホスト |
+| pre-commit | ESLint（frontend / demo-rp） | コンテナ（`docker compose exec`） |
+| pre-push | RSpec（idp-auth / idp-user / idp-client） | ホスト |
+
+> **注意:** ESLint はコンテナ内で実行するため、`docker compose up -d` でコンテナを起動しておく必要があります。
+> pre-push の RSpec はホストから PostgreSQL に接続するため、[テスト実行](#テスト実行) の環境変数を設定した状態で push してください。
 
 #### lefthook のインストール
 
@@ -111,16 +120,21 @@ lefthook install
 | idp-client | http://localhost:3002 |
 | frontend | http://localhost:5173 |
 | demo-rp | http://localhost:5174 |
+| demo-rp-2 | http://localhost:5175 |
+
+seed のユーザーで demo-rp にログインし、続けて demo-rp-2 を開くと再ログインなしで認証される（SSO）ことを確認できます。
 
 ## テスト実行
 
-idp-user サービスのテストには RSpec を使用しています。ここではホスト側（Docker コンテナ外）で直接実行する方法を記載します。
+idp-auth / idp-user / idp-client のテストには RSpec を使用しています。ここではホスト側（Docker コンテナ外）で直接実行する方法を記載します。
 
 ### 前提
 
-- ホストに Ruby 3.3.0 以降と Bundler がインストールされていること
+- ホストに Ruby 3.4.13 と Bundler がインストールされていること
 - PostgreSQL が起動しており、ポート 5432 でアクセスできること
-- `idp-user` ディレクトリで以下のコマンドを実行すること
+- 対象サービスのディレクトリで `bundle install` 済みであること
+
+以下は idp-user の例です。idp-auth / idp-client も同じ手順で実行できます。
 
 ```bash
 cd idp-user
