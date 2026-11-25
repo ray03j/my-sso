@@ -23,6 +23,14 @@ RSpec.describe Auth::TokenRevocationService do
       expect(access_token.reload).to be_revoked
     end
 
+    it '失効済みの refresh_token でも、失効時刻は変えずに残っている access_token を失効させること' do
+      refresh_token.revoke!
+      revoked_at = refresh_token.reload.revoked_at
+      described_class.revoke(token: refresh_token.token, client_id: client_id)
+      expect(refresh_token.reload.revoked_at).to eq(revoked_at)
+      expect(access_token.reload).to be_revoked
+    end
+
     it 'refresh_token を失効させても、他のクライアントの access_token は失効させないこと' do
       other = AccessToken.generate_for(user_id: user_id, client_id: other_client_id)
       described_class.revoke(token: refresh_token.token, client_id: client_id)

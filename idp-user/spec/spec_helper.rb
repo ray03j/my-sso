@@ -1,3 +1,8 @@
+require 'simplecov'
+SimpleCov.start 'rails' do
+  enable_coverage :branch
+end
+
 ENV['RAILS_ENV'] ||= 'test'
 ENV['INTERNAL_API_KEY'] ||= 'test-internal-api-key'
 require_relative '../config/environment'

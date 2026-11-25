@@ -1,3 +1,8 @@
+require 'simplecov'
+SimpleCov.start 'rails' do
+  enable_coverage :branch
+end
+
 require 'openssl'
 
 ENV['RAILS_ENV'] ||= 'test'

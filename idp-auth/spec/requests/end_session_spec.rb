@@ -38,6 +38,11 @@ RSpec.describe 'End Session', type: :request do
       expect(response).to redirect_to('http://localhost:5174/?state=xyz')
     end
 
+    it 'state がなければ post_logout_redirect_uri にクエリを付けずに戻すこと' do
+      get '/end_session', params: valid_params.except(:state)
+      expect(response).to redirect_to('http://localhost:5174/')
+    end
+
     it 'post_logout_redirect_uri がなければログアウトして完了を表示すること' do
       get '/end_session', params: { id_token_hint: id_token }
       expect(response).to have_http_status(:ok)
@@ -61,6 +66,24 @@ RSpec.describe 'End Session', type: :request do
       it '署名が不正な id_token_hint なら 400 を返すこと' do
         get '/end_session', params: valid_params.merge(id_token_hint: "#{id_token}x")
         expect(response).to have_http_status(:bad_request)
+      end
+
+      it '他の発行者の id_token_hint なら 400 を返し、ログアウトしないこと' do
+        foreign = Oidc::JwtSigner.sign(
+          iss: 'https://evil.example.com', sub: user_id, aud: client_id,
+          iat: Time.current.to_i, exp: 1.hour.from_now.to_i
+        )
+        expect_any_instance_of(EndSessionController).not_to receive(:reset_session)
+        get '/end_session', params: valid_params.merge(id_token_hint: foreign)
+        expect(response).to have_http_status(:bad_request)
+        expect(response.body).to eq('invalid_request')
+      end
+
+      it 'id_token_hint の aud のクライアントが登録されていなければ invalid_client で 400 を返すこと' do
+        allow(HTTParty).to receive(:get).and_return(double(success?: false, parsed_response: {}))
+        get '/end_session', params: valid_params
+        expect(response).to have_http_status(:bad_request)
+        expect(response.body).to eq('invalid_client')
       end
 
       it '登録されていない post_logout_redirect_uri なら、リダイレクトせず 400 を返すこと' do
