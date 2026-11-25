@@ -48,6 +48,30 @@ RSpec.describe Auth::AuthorizationCodeService do
       end.to raise_error(Auth::AuthorizationCodeService::InvalidRequestError)
     end
 
+    it 'client_id が欠落するとエラーになる' do
+      expect do
+        described_class.issue(
+          user_id: '550e8400-e29b-41d4-a716-446655440000',
+          client_id: '',
+          redirect_uri: 'http://localhost:5174/callback',
+          code_challenge: code_challenge,
+          code_challenge_method: 'S256'
+        )
+      end.to raise_error(Auth::AuthorizationCodeService::InvalidRequestError, 'client_id is required')
+    end
+
+    it 'redirect_uri が欠落するとエラーになる' do
+      expect do
+        described_class.issue(
+          user_id: '550e8400-e29b-41d4-a716-446655440000',
+          client_id: '550e8400-e29b-41d4-a716-446655440001',
+          redirect_uri: nil,
+          code_challenge: code_challenge,
+          code_challenge_method: 'S256'
+        )
+      end.to raise_error(Auth::AuthorizationCodeService::InvalidRequestError, 'redirect_uri is required')
+    end
+
     it 'code_challenge が欠落するとエラーになる' do
       expect do
         described_class.issue(
